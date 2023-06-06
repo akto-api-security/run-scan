@@ -4,7 +4,7 @@ const axios = require("axios")
 async function run() {
   let AKTO_START_TEST_ENDPOINT = ""
 
-  const AKTO_DASHBOARD_URL = core.getInput('AKTO_DASHBOARD_URL')
+  let AKTO_DASHBOARD_URL = core.getInput('AKTO_DASHBOARD_URL')
   const AKTO_API_KEY = core.getInput('AKTO_API_KEY')
   const AKTO_TEST_ID = core.getInput('AKTO_TEST_ID')
   const START_TIME_DELAY = core.getInput('START_TIME_DELAY')
@@ -17,11 +17,11 @@ async function run() {
     }
   }
 
-  if (AKTO_DASHBOARD_URL.endsWith("/")) {
-    AKTO_START_TEST_ENDPOINT = AKTO_DASHBOARD_URL + "api/startTest"
-  } else {
-    AKTO_START_TEST_ENDPOINT = AKTO_DASHBOARD_URL + "/api/startTest"
+  if (!AKTO_DASHBOARD_URL.endsWith("/")) {
+    AKTO_DASHBOARD_URL = AKTO_DASHBOARD_URL + "/"
   }
+
+  AKTO_START_TEST_ENDPOINT = AKTO_DASHBOARD_URL + "api/startTest"
 
    const data = {
     "testingRunHexId": AKTO_TEST_ID,
@@ -46,8 +46,10 @@ async function run() {
   }
 
   try {
-    res = await axios(config)
-    console.log("Akto CI/CD test started")
+    let res = await axios(config)
+    console.log("Akto CI/CD test triggered")
+    let resultsUrl = AKTO_DASHBOARD_URL + "dashboard/testing/" + AKTO_TEST_ID + "/results";
+    console.log("You can view the results at " + resultsUrl);
   } catch (error) {
     core.setFailed(error.message);
   }
