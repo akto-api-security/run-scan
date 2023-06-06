@@ -47,7 +47,7 @@ async function run() {
 
   try {
     let res = await axios(config)
-    console.log("Akto CI/CD test started")
+    console.log("Akto CI/CD test triggered")
     let resultsUrl = AKTO_DASHBOARD_URL + "dashboard/testing/" + AKTO_TEST_ID + "/results";
     console.log("You can view the results at " + resultsUrl);
   } catch (error) {
