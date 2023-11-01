@@ -63,6 +63,7 @@ async function run() {
   try {
     res = await axios(config)
     console.log("Akto CI/CD test started")
+    console.log(JSON.stringify(res))
     let testingRunSummaryHexId = res["testingRunResultSummaryHexId"]
     console.log("Testing run summary hexId:" + testingRunSummaryHexId)
     if (testingRunSummaryHexId) {
