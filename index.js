@@ -36,7 +36,7 @@ async function run() {
       "repository_url": process.env.GITHUB_SERVER_URL + "/" + process.env.GITHUB_REPOSITORY, 
       "branch": process.env.GITHUB_REF_NAME,
       "commit_sha": process.env.GITHUB_SHA,
-      "pull_request_id" : process.env.GITHUB_REF
+      "pull_request_id" : process.env.GITHUB_REF,
       "commit_sha_head": GITHUB_COMMIT_ID
 
     }
