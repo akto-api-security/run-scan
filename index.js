@@ -63,8 +63,10 @@ async function run() {
   try {
     res = await axios(config)
     console.log("Akto CI/CD test started")
-    console.log(JSON.stringify(res))
-    let testingRunSummaryHexId = res["testingRunResultSummaryHexId"]
+    await res.json()
+    console.log(JSON.stringify(res.json()))
+    let response = res.json()
+    let testingRunSummaryHexId = response["testingRunResultSummaryHexId"]
     console.log("Testing run summary hexId:" + testingRunSummaryHexId)
     if (testingRunSummaryHexId) {
       triggerGithubCheck["data"] = { "testingRunSummaryHexId" : testingRunSummaryHexId} 
