@@ -65,10 +65,11 @@ async function run() {
     res = await axios(config)
     console.log("Akto CI/CD test started")
     let testingRunSummaryHexId = res["testingRunSummaryHexId"]
+    console.log("Testing run summary hexId:" + testingRunSummaryHexId)
     if (testingRunSummaryHexId) {
       triggerGithubCheck["data"] = { "testingRunSummaryHexId" : testingRunSummaryHexId} 
     }
-    await axios(triggerGithubCheck)
+    res1 = await axios(triggerGithubCheck)
     console.log("Akto CI/CD github check triggered")
   } catch (error) {
     core.setFailed(error.message);
