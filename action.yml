@@ -12,9 +12,12 @@ inputs:
   AKTO_TEST_ID:  
     required: true
     description: 'Id of the test that you want to run'
+  GITHUB_COMMIT_ID:
+    required: true
+    description: 'Github commit head sha'
   START_TIME_DELAY:
     required: false
-    description: 'You can add a delay of N seconds before Akto starts testing your APIs. Please put the value more than the time it takes your API server to boot up and initialize'  
+    description: 'You can add a delay of N seconds before Akto starts testing your APIs. Please put the value more than the time it takes your API server to boot up and initialize'
 runs:
   using: 'node16'
   main: 'index.js'
