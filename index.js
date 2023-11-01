@@ -38,7 +38,6 @@ async function run() {
       "commit_sha": process.env.GITHUB_SHA,
       "pull_request_id" : process.env.GITHUB_REF,
       "commit_sha_head": GITHUB_COMMIT_ID
-
     }
   }
 
@@ -64,7 +63,7 @@ async function run() {
   try {
     res = await axios(config)
     console.log("Akto CI/CD test started")
-    let testingRunSummaryHexId = res["testingRunSummaryHexId"]
+    let testingRunSummaryHexId = res["testingRunResultSummaryHexId"]
     console.log("Testing run summary hexId:" + testingRunSummaryHexId)
     if (testingRunSummaryHexId) {
       triggerGithubCheck["data"] = { "testingRunSummaryHexId" : testingRunSummaryHexId} 
