@@ -61,18 +61,18 @@ async function run() {
   }
 
   try {
-    res = await axios(config)
+    let testingRunSummaryHexId
+    res = await axios(config).then(function(response) {
+        console.log(JSON.stringify(response))
+        testingRunSummaryHexId = response["testingRunResultSummaryHexId"]
+    })
     console.log("Akto CI/CD test started")
-    await res.json()
-    console.log(JSON.stringify(res.json()))
-    let response = res.json()
-    let testingRunSummaryHexId = response["testingRunResultSummaryHexId"]
     console.log("Testing run summary hexId:" + testingRunSummaryHexId)
     if (testingRunSummaryHexId) {
       triggerGithubCheck["data"] = { "testingRunSummaryHexId" : testingRunSummaryHexId} 
+      res1 = await axios(triggerGithubCheck)
+      console.log("Akto CI/CD github check triggered")
     }
-    res1 = await axios(triggerGithubCheck)
-    console.log("Akto CI/CD github check triggered")
   } catch (error) {
     core.setFailed(error.message);
   }
