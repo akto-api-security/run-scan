@@ -8,7 +8,7 @@ async function run() {
   const AKTO_API_KEY = core.getInput('AKTO_API_KEY')
   const AKTO_TEST_ID = core.getInput('AKTO_TEST_ID')
   const START_TIME_DELAY = core.getInput('START_TIME_DELAY')
-  const OVERRIDEN_TEST_APP_URL = core.getInput('OVERRIDEN_TEST_APP_URL')
+  const OVERRIDDEN_TEST_APP_URL = core.getInput('OVERRIDDEN_TEST_APP_URL')
   
   let startTimestamp = 0;
   if(START_TIME_DELAY!=''){
@@ -36,8 +36,8 @@ async function run() {
     }
   }
 
-  if (OVERRIDEN_TEST_APP_URL) {
-    data["overriddenTestAppUrl"] = OVERRIDEN_TEST_APP_URL
+  if (OVERRIDDEN_TEST_APP_URL) {
+    data["overriddenTestAppUrl"] = OVERRIDDEN_TEST_APP_URL
   }
 
   const config = {
