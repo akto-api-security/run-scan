@@ -15,7 +15,7 @@ inputs:
   START_TIME_DELAY:
     required: false
     description: 'You can add a delay of N seconds before Akto starts testing your APIs. Please put the value more than the time it takes your API server to boot up and initialize'  
-  OVERRIDEN_TEST_APP_URL:
+  OVERRIDDEN_TEST_APP_URL:
     required: false
     description: 'Run tests on a different application host'
     
