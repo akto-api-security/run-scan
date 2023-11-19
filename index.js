@@ -44,8 +44,7 @@ async function fetchTestingRunResultSummary(testingRunResultSummaryHexId) {
 }
 
 function exitIfBlockLevelBreached(resultLevel, blockLevel) {
-  if (blockLevel <= resultLevel) process.exit(1);
-  else process.exit(0);
+  if (blockLevel <= resultLevel) core.setFailed("Found vulnerabilties");
 }
 
 function parseBlockLevel(BLOCK_LEVEL) {
@@ -97,7 +96,6 @@ async function waitTillComplete(testDetails, maxWaitTime) {
         break;
       } else if (state === 'STOPPED') {
         logGithubStepSummary(`Test stopped`);
-        process.exit(0);
         break;
       } else {
         console.log('Waiting for akto test to be completed...');
@@ -159,7 +157,7 @@ async function run() {
     waitTillComplete(res.data, waitTimeForResult);  
 
   } catch (error) {
-    console.log(error.message);
+    core.setFailed(error.message);
   }
 }
 
