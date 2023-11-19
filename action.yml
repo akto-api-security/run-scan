@@ -18,6 +18,12 @@ inputs:
   OVERRIDDEN_TEST_APP_URL:
     required: false
     description: 'Run tests on a different application host'
+  WAIT_TIME_FOR_RESULT:
+    required: false
+    description: 'Time to wait for Akto test results to complete. If it takes more time that defined, pull requests passes. Set to 0 if you want to run tests, but not block the PR'
+  BLOCK_LEVEL:
+    required: false
+    description: 'If vulnerabilties equal to or higher are found, the PR is failed. Set as HIGH, MEDIUM, LOW, NONE"
     
 runs:
   using: 'node16'
