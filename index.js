@@ -1,3 +1,4 @@
+const core = require('@actions/core');
 const axios = require("axios")
 const fs = require('fs');
 
