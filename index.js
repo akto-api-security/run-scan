@@ -6,7 +6,7 @@ const AKTO_DASHBOARD_URL = process.env.AKTO_DASHBOARD_URL
 const AKTO_API_KEY = process.env.AKTO_API_KEY
 const AKTO_TEST_ID = process.env.AKTO_TEST_ID
 const START_TIME_DELAY = process.env.START_TIME_DELAY
-const OVERRIDEN_TEST_APP_URL = process.env.OVERRIDEN_TEST_APP_URL
+const OVERRIDDEN_TEST_APP_URL = process.env.OVERRIDDEN_TEST_APP_URL
 const WAIT_TIME_FOR_RESULT = process.env.WAIT_TIME_FOR_RESULT
 const BLOCK_LEVEL = process.env.BLOCK_LEVEL || "HIGH"
 const GITHUB_STEP_SUMMARY = process.env.GITHUB_STEP_SUMMARY
@@ -109,6 +109,7 @@ async function waitTillComplete(testDetails, maxWaitTime) {
 }
 
 async function run() {
+  console.log(AKTO_DASHBOARD_URL, AKTO_TEST_ID, START_TIME_DELAY, OVERRIDDEN_TEST_APP_URL, WAIT_TIME_FOR_RESULT, BLOCK_LEVEL)
   let AKTO_START_TEST_ENDPOINT = ""
   let startTimestamp = 0;
   if(START_TIME_DELAY!=''){
@@ -137,7 +138,7 @@ async function run() {
   }
 
   if (OVERRIDEN_TEST_APP_URL) {
-    data["overriddenTestAppUrl"] = OVERRIDEN_TEST_APP_URL
+    data["overriddenTestAppUrl"] = OVERRIDDEN_TEST_APP_URL
   }
 
   const config = {
