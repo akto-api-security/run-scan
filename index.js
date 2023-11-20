@@ -9,7 +9,7 @@ const START_TIME_DELAY = core.getInput('START_TIME_DELAY')
 const OVERRIDDEN_TEST_APP_URL = core.getInput('OVERRIDDEN_TEST_APP_URL')
 const WAIT_TIME_FOR_RESULT = core.getInput('WAIT_TIME_FOR_RESULT')
 const BLOCK_LEVEL = core.getInput('BLOCK_LEVEL') || "HIGH"
-const GITHUB_STEP_SUMMARY = core.getInput('GITHUB_STEP_SUMMARY')
+const GITHUB_STEP_SUMMARY = process.env.GITHUB_STEP_SUMMARY
 
 function logGithubStepSummary(message) {
   fs.appendFileSync(GITHUB_STEP_SUMMARY, `${message}\n`);
