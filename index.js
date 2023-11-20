@@ -11,8 +11,8 @@ const WAIT_TIME_FOR_RESULT = core.getInput('WAIT_TIME_FOR_RESULT')
 const BLOCK_LEVEL = core.getInput('BLOCK_LEVEL') || "HIGH"
 const GITHUB_STEP_SUMMARY = process.env.GITHUB_STEP_SUMMARY
 
-function logGithubStepSummary(message) {
-  fs.appendFileSync(GITHUB_STEP_SUMMARY, `${message}\n`);
+async function logGithubStepSummary(message) {
+  await core.summary.addRaw(`${message}`).addEOL();
 }
 
 function toInt(a) {
