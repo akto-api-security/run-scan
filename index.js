@@ -137,7 +137,7 @@ async function run() {
     }
   }
 
-  if (OVERRIDEN_TEST_APP_URL) {
+  if (OVERRIDDEN_TEST_APP_URL) {
     data["overriddenTestAppUrl"] = OVERRIDDEN_TEST_APP_URL
   }
 
