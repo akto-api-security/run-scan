@@ -8,7 +8,8 @@ async function run() {
   const AKTO_API_KEY = core.getInput('AKTO_API_KEY')
   const AKTO_TEST_ID = core.getInput('AKTO_TEST_ID')
   const START_TIME_DELAY = core.getInput('START_TIME_DELAY')
-  
+  const GITHUB_COMMIT_ID = core.getInput('GITHUB_COMMIT_ID')
+
   let startTimestamp = 0;
   if(START_TIME_DELAY!=''){
     let delay = parseInt(START_TIME_DELAY);
@@ -32,7 +33,8 @@ async function run() {
       "repository_url": process.env.GITHUB_SERVER_URL + "/" + process.env.GITHUB_REPOSITORY, 
       "branch": process.env.GITHUB_REF_NAME,
       "commit_sha": process.env.GITHUB_SHA,
-      "pull_request_id" : process.env.GITHUB_REF
+      "pull_request_id" : process.env.GITHUB_REF,
+      "commit_sha_head": GITHUB_COMMIT_ID
     }
   }
 
