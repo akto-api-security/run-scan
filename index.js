@@ -3,7 +3,6 @@ const axios = require("axios")
 
 async function run() {
   let AKTO_START_TEST_ENDPOINT = ""
-  let AKTO_GITHUB_CHECK_ENDPOINT = ""
 
   const AKTO_DASHBOARD_URL = core.getInput('AKTO_DASHBOARD_URL')
   const AKTO_API_KEY = core.getInput('AKTO_API_KEY')
@@ -20,10 +19,8 @@ async function run() {
 
   if (AKTO_DASHBOARD_URL.endsWith("/")) {
     AKTO_START_TEST_ENDPOINT = AKTO_DASHBOARD_URL + "api/startTest"
-    AKTO_GITHUB_CHECK_ENDPOINT = AKTO_DASHBOARD_URL + "api/updateGithubStatus"
   } else {
     AKTO_START_TEST_ENDPOINT = AKTO_DASHBOARD_URL + "/api/startTest"
-    AKTO_GITHUB_CHECK_ENDPOINT = AKTO_DASHBOARD_URL + "/api/updateGithubStatus"
   }
 
    const data = {
@@ -49,24 +46,9 @@ async function run() {
     data: data
   }
 
-  const triggerGithubCheck = {
-    method: 'post',
-    url: AKTO_GITHUB_CHECK_ENDPOINT,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-API-KEY': AKTO_API_KEY,
-    }
-  }
-
   try {
     res = await axios(config)
     console.log("Akto CI/CD test started")
-    let testingRunSummaryHexId = res["testingRunSummaryHexId"]
-    if (testingRunSummaryHexId) {
-      triggerGithubCheck["data"] = { "testingRunSummaryHexId" : testingRunSummaryHexId} 
-    }
-    await axios(triggerGithubCheck)
-    console.log("Akto CI/CD github check triggered")
   } catch (error) {
     core.setFailed(error.message);
   }
