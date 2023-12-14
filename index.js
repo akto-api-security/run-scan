@@ -144,6 +144,7 @@ async function run() {
   }
 
   if (GITHUB_COMMIT_ID) {
+    console.log("found github commit id")
     data["commit_sha_head"] = GITHUB_COMMIT_ID
   }
 
@@ -158,6 +159,7 @@ async function run() {
   }
 
   try {
+    console.log("data_before_starting test",data)
     res = await axios(config)
     console.log("Akto CI/CD test started")
 
