@@ -10,6 +10,7 @@ const OVERRIDDEN_TEST_APP_URL = core.getInput('OVERRIDDEN_TEST_APP_URL')
 const WAIT_TIME_FOR_RESULT = core.getInput('WAIT_TIME_FOR_RESULT')
 const BLOCK_LEVEL = core.getInput('BLOCK_LEVEL') || "HIGH"
 const GITHUB_STEP_SUMMARY = process.env.GITHUB_STEP_SUMMARY
+const GITHUB_COMMIT_ID = core.getInput('GITHUB_COMMIT_ID')
 
 async function logGithubStepSummary(message) {
   await core.summary.addRaw(`${message}`).addEOL();
@@ -19,7 +20,7 @@ function toInt(a) {
   if (a === '') return 0;
 
   let ret = parseInt(a);
-  
+
   if (isNaN(ret)) return 0;
 
   return ret;
@@ -50,7 +51,7 @@ function exitIfBlockLevelBreached(resultLevel, blockLevel) {
 
 function parseBlockLevel(BLOCK_LEVEL) {
  if (BLOCK_LEVEL === '') return 10;
- 
+
  if (BLOCK_LEVEL === 'HIGH') return 3;
  if (BLOCK_LEVEL === 'MEDIUM') return 2;
  if (BLOCK_LEVEL === 'LOW') return 1;
@@ -62,8 +63,8 @@ function parseBlockLevel(BLOCK_LEVEL) {
 
 async function waitTillComplete(testDetails, maxWaitTime) {
   let testingRunResultSummaryHexId = testDetails.testingRunResultSummaryHexId
-  if (!testingRunResultSummaryHexId) return;   
-  
+  if (!testingRunResultSummaryHexId) return;
+
   const pollStartTime = Math.floor(Date.now() / 1000);
   while (true) {
     pollCurrentTime = Math.floor(Date.now() / 1000);
@@ -133,12 +134,17 @@ async function run() {
       "repository": process.env.GITHUB_REPOSITORY,
       "repository_url": process.env.GITHUB_SERVER_URL + "/" + process.env.GITHUB_REPOSITORY, 
       "branch": process.env.GITHUB_REF_NAME,
-      "commit_sha": process.env.GITHUB_SHA
+      "commit_sha": process.env.GITHUB_SHA,
+      "pull_request_id" : process.env.GITHUB_REF
     }
   }
 
   if (OVERRIDDEN_TEST_APP_URL) {
     data["overriddenTestAppUrl"] = OVERRIDDEN_TEST_APP_URL
+  }
+
+  if (GITHUB_COMMIT_ID) {
+    data["metadata"]["commit_sha_head"] = GITHUB_COMMIT_ID
   }
 
   const config = {
@@ -156,7 +162,7 @@ async function run() {
     console.log("Akto CI/CD test started")
 
     let waitTimeForResult = toInt(WAIT_TIME_FOR_RESULT)
-    waitTillComplete(res.data, waitTimeForResult);  
+    waitTillComplete(res.data, waitTimeForResult);
 
   } catch (error) {
     core.setFailed(error.message);
