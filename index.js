@@ -1,19 +1,18 @@
-const core = require('@actions/core');
+//const core = require('@actions/core');
 const axios = require("axios")
 const fs = require('fs');
 
-const AKTO_DASHBOARD_URL = core.getInput('AKTO_DASHBOARD_URL')
-const AKTO_API_KEY = core.getInput('AKTO_API_KEY')
-const AKTO_TEST_ID = core.getInput('AKTO_TEST_ID')
-const START_TIME_DELAY = core.getInput('START_TIME_DELAY')
-const OVERRIDDEN_TEST_APP_URL = core.getInput('OVERRIDDEN_TEST_APP_URL')
-const WAIT_TIME_FOR_RESULT = core.getInput('WAIT_TIME_FOR_RESULT')
-const BLOCK_LEVEL = core.getInput('BLOCK_LEVEL') || "HIGH"
-const GITHUB_STEP_SUMMARY = process.env.GITHUB_STEP_SUMMARY
-const GITHUB_COMMIT_ID = core.getInput('GITHUB_COMMIT_ID')
+const AKTO_DASHBOARD_URL = process.env['AKTO_DASHBOARD_URL']
+const AKTO_API_KEY = process.env['AKTO_API_KEY']
+const AKTO_TEST_ID = process.env['AKTO_TEST_ID']
+const START_TIME_DELAY = process.env['START_TIME_DELAY']
+const OVERRIDDEN_TEST_APP_URL = process.env['OVERRIDDEN_TEST_APP_URL']
+const WAIT_TIME_FOR_RESULT = process.env['WAIT_TIME_FOR_RESULT']
+const BLOCK_LEVEL = process.env['BLOCK_LEVEL'] || "HIGH"
+const GITHUB_COMMIT_ID = process.env['GITHUB_COMMIT_ID']
 
 async function logGithubStepSummary(message) {
-  await core.summary.addRaw(`${message}`).addEOL();
+  console.log(`${message}`);
 }
 
 function toInt(a) {
@@ -46,7 +45,7 @@ async function fetchTestingRunResultSummary(testingRunResultSummaryHexId) {
 }
 
 function exitIfBlockLevelBreached(resultLevel, blockLevel) {
-  if (blockLevel <= resultLevel) core.setFailed("Found vulnerabilties");
+  if (blockLevel <= resultLevel) console.log("Found vulnerabilties");
 }
 
 function parseBlockLevel(BLOCK_LEVEL) {
@@ -165,7 +164,7 @@ async function run() {
     waitTillComplete(res.data, waitTimeForResult);
 
   } catch (error) {
-    core.setFailed(error.message);
+    console.error(error.message);
   }
 }
 
