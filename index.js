@@ -1,5 +1,6 @@
 //const core = require('@actions/core');
 const axios = require("axios")
+const https = require("https")
 const fs = require('fs');
 
 const AKTO_DASHBOARD_URL = process.env['AKTO_DASHBOARD_URL']
@@ -156,8 +157,10 @@ async function run() {
     data: data
   }
 
+  const httpsAgent = new https.Agent({ rejectUnauthorized: false });
+
   try {
-    res = await axios(config)
+    res = await axios(config, { httpsAgent: httpsAgent })
     console.log("Akto CI/CD test started")
 
     let waitTimeForResult = toInt(WAIT_TIME_FOR_RESULT)
