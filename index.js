@@ -157,7 +157,11 @@ async function run() {
     data: data
   }
 
-  const httpsAgent = new https.Agent({ rejectUnauthorized: false });
+  const httpsAgent = new https.Agent({
+    rejectUnauthorized: false,
+    cert: fs.readFileSync("/cert.pem"),
+    ca: fs.readFileSync("/ca.pem")
+  })
 
   try {
     res = await axios(config, { httpsAgent: httpsAgent })
