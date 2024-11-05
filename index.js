@@ -160,7 +160,7 @@ async function run() {
   const httpsAgent = new https.Agent({
     rejectUnauthorized: false,
     cert: fs.readFileSync("/cert.pem"),
-    ca: fs.readFileSync("/ca.pem")
+    key: fs.readFileSync("/key.pem")
   })
 
   try {
