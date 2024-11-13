@@ -11,6 +11,8 @@ const OVERRIDDEN_TEST_APP_URL = process.env['OVERRIDDEN_TEST_APP_URL']
 const WAIT_TIME_FOR_RESULT = process.env['WAIT_TIME_FOR_RESULT']
 const BLOCK_LEVEL = process.env['BLOCK_LEVEL'] || "HIGH"
 const GITHUB_COMMIT_ID = process.env['GITHUB_COMMIT_ID']
+const ACCOUNT_ID = process.env['ACCOUNT_ID'] || 1000000
+const SAVE_REPORT_FOR_PUBLIC_USE = process.env['SAVE_REPORT_FOR_PUBLIC_USE'] || false
 
 async function logGithubStepSummary(message) {
   console.log(`${message}`);
@@ -26,21 +28,92 @@ function toInt(a) {
   return ret;
 }
 
+function getDaySuffix(day) {
+  if (day > 3 && day < 21) return 'th';
+  switch (day % 10) {
+      case 1: return 'st';
+      case 2: return 'nd';
+      case 3: return 'rd';
+      default: return 'th';
+  }
+}
+
+function formatReportDate(date) {
+  const day = date.getDate();
+  const month = date.toLocaleString('default', { month: 'long' });
+  const year = date.getFullYear();
+  const daySuffix = getDaySuffix(day);
+  return `${day}${daySuffix} ${month}, ${year}`;
+}
+
+const httpsAgent = new https.Agent({
+  rejectUnauthorized: false,
+  cert: fs.readFileSync("/cert.pem"),
+  key: fs.readFileSync("/key.pem")
+})
+
+async function makeRequest(url, data) {
+  const config = {
+    method: 'post',
+    url: url,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-API-KEY': AKTO_API_KEY,
+    },
+    data: data
+  }
+  const result = await axios(config, { httpsAgent: httpsAgent })
+  return result;
+}
+
 async function fetchTestingRunResultSummary(testingRunResultSummaryHexId) {
   try {
     console.log("testingRunResultSummaryHexId: ", testingRunResultSummaryHexId);
-    const result = await axios.post(`${AKTO_DASHBOARD_URL}/api/fetchTestingRunResultSummary`, {
-      testingRunResultSummaryHexId
-    }, {
-      headers: {
-        'content-type': 'application/json',
-        'X-API-KEY': AKTO_API_KEY
-      }
-    });
+    const data = {
+      "testingRunResultSummaryHexId": testingRunResultSummaryHexId
+    }
+    const url = `${AKTO_DASHBOARD_URL}/api/fetchTestingRunResultSummary`;
+    const result = await makeRequest(url, data)
 
     return result.data;
   } catch (error) {
     console.error('Error fetching testing run result summaries:', error);
+    return null;
+  }
+}
+
+async function saveReportPdf(testingRunResultSummaryHexId) {
+  try {
+    console.log("testingRunResultSummaryHexId: ", testingRunResultSummaryHexId);
+    const data = {
+      "testingRunResultSummaryHexId": testingRunResultSummaryHexId,
+      "reportUrl": `${AKTO_DASHBOARD_URL}/dashboard/testing/summary/${testingRunResultSummaryHexId}`,
+      "reportDate": formatReportDate(new Date())
+    }
+    const url = `${AKTO_DASHBOARD_URL}/api/saveReportPDF`;
+    const result = await makeRequest(url, data)
+
+    return result.data;
+  } catch (error) {
+    console.error('Error saving vulnerability report', error);
+    return null;
+  }
+}
+
+async function toggleSaveReport() {
+  try {
+    const data =
+    {
+      "testingRunHexId": AKTO_TEST_ID,
+      "saveReports": SAVE_REPORT_FOR_PUBLIC_USE,
+      "reportDate": formatReportDate(new Date())
+    }
+    const url = `${AKTO_DASHBOARD_URL}/api/toggleTestRunSaveReport`;
+    const result = await makeRequest(url, data)
+
+    return result.data;
+  } catch (error) {
+    console.error('Error in toggleSaveReport', error);
     return null;
   }
 }
@@ -59,7 +132,6 @@ function parseBlockLevel(BLOCK_LEVEL) {
  return 10;
 
 }
-
 
 async function waitTillComplete(testDetails, maxWaitTime) {
   let testingRunResultSummaryHexId = testDetails.testingRunResultSummaryHexId
@@ -80,6 +152,15 @@ async function waitTillComplete(testDetails, maxWaitTime) {
       state = response.testingRunResultSummaries[0]?.state;
 
       if (state === 'COMPLETED') {
+
+        if (SAVE_REPORT_FOR_PUBLIC_USE) {
+          toggleSaveReport();
+          saveReportPdf(testingRunResultSummaryHexId);
+          logGithubStepSummary(`Report generation started, it will be available after some time on the below URL.`)
+          const base64AccountId = btoa(ACCOUNT_ID);
+          logGithubStepSummary(`[Report](${AKTO_DASHBOARD_URL}/reports/downloadReportPDF?accountId=${base64AccountId}&summaryId=${testingRunResultSummaryHexId})`)
+        }
+
         const { countIssues } = response.testingRunResultSummaries[0];
         const { HIGH, MEDIUM, LOW } = countIssues;
 
@@ -147,24 +228,8 @@ async function run() {
     data["metadata"]["commit_sha_head"] = GITHUB_COMMIT_ID
   }
 
-  const config = {
-    method: 'post',
-    url: AKTO_START_TEST_ENDPOINT,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-API-KEY': AKTO_API_KEY,
-    },
-    data: data
-  }
-
-  const httpsAgent = new https.Agent({
-    rejectUnauthorized: false,
-    cert: fs.readFileSync("/cert.pem"),
-    key: fs.readFileSync("/key.pem")
-  })
-
   try {
-    res = await axios(config, { httpsAgent: httpsAgent })
+    res = await makeRequest(AKTO_START_TEST_ENDPOINT, data)
     console.log("Akto CI/CD test started")
 
     let waitTimeForResult = toInt(WAIT_TIME_FOR_RESULT)
