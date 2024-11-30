@@ -26,17 +26,34 @@ function toInt(a) {
   return ret;
 }
 
+const httpsAgent = new https.Agent({
+  rejectUnauthorized: false,
+  cert: fs.readFileSync("/cert.pem"),
+  key: fs.readFileSync("/key.pem")
+})
+
+async function makeRequest(url, data) {
+  const config = {
+    method: 'post',
+    url: url,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-API-KEY': AKTO_API_KEY,
+    },
+    data: data
+  }
+  const result = await axios(config, { httpsAgent: httpsAgent })
+  return result;
+}
+
 async function fetchTestingRunResultSummary(testingRunResultSummaryHexId) {
   try {
     console.log("testingRunResultSummaryHexId: ", testingRunResultSummaryHexId);
-    const result = await axios.post(`${AKTO_DASHBOARD_URL}/api/fetchTestingRunResultSummary`, {
-      testingRunResultSummaryHexId
-    }, {
-      headers: {
-        'content-type': 'application/json',
-        'X-API-KEY': AKTO_API_KEY
-      }
-    });
+    const data = {
+      "testingRunResultSummaryHexId": testingRunResultSummaryHexId
+    }
+    const url = `${AKTO_DASHBOARD_URL}/api/fetchTestingRunResultSummary`;
+    const result = await makeRequest(url, data)
 
     return result.data;
   } catch (error) {
@@ -46,7 +63,7 @@ async function fetchTestingRunResultSummary(testingRunResultSummaryHexId) {
 }
 
 function exitIfBlockLevelBreached(resultLevel, blockLevel) {
-  if (blockLevel <= resultLevel) console.log("Found vulnerabilties");
+  if (blockLevel <= resultLevel) console.log("Found vulnerabilities");
 }
 
 function parseBlockLevel(BLOCK_LEVEL) {
@@ -59,7 +76,6 @@ function parseBlockLevel(BLOCK_LEVEL) {
  return 10;
 
 }
-
 
 async function waitTillComplete(testDetails, maxWaitTime) {
   let testingRunResultSummaryHexId = testDetails.testingRunResultSummaryHexId
@@ -80,6 +96,9 @@ async function waitTillComplete(testDetails, maxWaitTime) {
       state = response.testingRunResultSummaries[0]?.state;
 
       if (state === 'COMPLETED') {
+        logGithubStepSummary(`Report generation started, it will be available after some time on the below request.`)
+        logGithubStepSummary(`[Report curl](curl --location --request POST '${AKTO_DASHBOARD_URL}/api/downloadTestReport?summaryId=${testingRunResultSummaryHexId}' --header 'x-api-key: ${AKTO_API_KEY}')`)
+
         const { countIssues } = response.testingRunResultSummaries[0];
         const { HIGH, MEDIUM, LOW } = countIssues;
 
@@ -147,24 +166,8 @@ async function run() {
     data["metadata"]["commit_sha_head"] = GITHUB_COMMIT_ID
   }
 
-  const config = {
-    method: 'post',
-    url: AKTO_START_TEST_ENDPOINT,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-API-KEY': AKTO_API_KEY,
-    },
-    data: data
-  }
-
-  const httpsAgent = new https.Agent({
-    rejectUnauthorized: false,
-    cert: fs.readFileSync("/cert.pem"),
-    key: fs.readFileSync("/key.pem")
-  })
-
   try {
-    res = await axios(config, { httpsAgent: httpsAgent })
+    res = await makeRequest(AKTO_START_TEST_ENDPOINT, data)
     console.log("Akto CI/CD test started")
 
     let waitTimeForResult = toInt(WAIT_TIME_FOR_RESULT)
