@@ -81,7 +81,11 @@ async function waitTillComplete(testDetails, maxWaitTime) {
 
       if (state === 'COMPLETED') {
         const { countIssues } = response.testingRunResultSummaries[0];
-        const { CRITICAL, HIGH, MEDIUM, LOW } = countIssues;
+        let { CRITICAL, HIGH, MEDIUM, LOW } = countIssues;
+
+        if (!CRITICAL) {
+          CRITICAL = 0
+        }
 
         logGithubStepSummary(`[Results](${AKTO_DASHBOARD_URL}/dashboard/testing/${AKTO_TEST_ID}/results)`);
         logGithubStepSummary(`CRITICAL: ${CRITICAL}`);
@@ -89,7 +93,7 @@ async function waitTillComplete(testDetails, maxWaitTime) {
         logGithubStepSummary(`MEDIUM: ${MEDIUM}`);
         logGithubStepSummary(`LOW: ${LOW}`);
 
-        if (CRITICAL> 0 || HIGH > 0 || MEDIUM > 0 || LOW > 0) {
+        if (CRITICAL > 0 || HIGH > 0 || MEDIUM > 0 || LOW > 0) {
           logGithubStepSummary(`Vulnerabilities found!!`);
 
           let blockLevel = parseBlockLevel(BLOCK_LEVEL)
@@ -131,7 +135,7 @@ async function run() {
     "testingRunHexId": AKTO_TEST_ID,
     "startTimestamp" : startTimestamp,
     "metadata": {
-      "platform": "Github Actions",
+      "platform": process.env.CICD_PLATFORM || "Github Actions",
       "repository": process.env.GITHUB_REPOSITORY,
       "repository_url": process.env.GITHUB_SERVER_URL + "/" + process.env.GITHUB_REPOSITORY, 
       "branch": process.env.GITHUB_REF_NAME,
