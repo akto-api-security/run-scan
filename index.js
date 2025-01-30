@@ -51,6 +51,7 @@ function exitIfBlockLevelBreached(resultLevel, blockLevel) {
 function parseBlockLevel(BLOCK_LEVEL) {
  if (BLOCK_LEVEL === '') return 10;
 
+ if (BLOCK_LEVEL === 'CRITICAL') return 3;
  if (BLOCK_LEVEL === 'HIGH') return 3;
  if (BLOCK_LEVEL === 'MEDIUM') return 2;
  if (BLOCK_LEVEL === 'LOW') return 1;
@@ -80,18 +81,19 @@ async function waitTillComplete(testDetails, maxWaitTime) {
 
       if (state === 'COMPLETED') {
         const { countIssues } = response.testingRunResultSummaries[0];
-        const { HIGH, MEDIUM, LOW } = countIssues;
+        const { CRITICAL, HIGH, MEDIUM, LOW } = countIssues;
 
         logGithubStepSummary(`[Results](${AKTO_DASHBOARD_URL}/dashboard/testing/${AKTO_TEST_ID}/results)`);
+        logGithubStepSummary(`CRITICAL: ${CRITICAL}`);
         logGithubStepSummary(`HIGH: ${HIGH}`);
         logGithubStepSummary(`MEDIUM: ${MEDIUM}`);
         logGithubStepSummary(`LOW: ${LOW}`);
 
-        if (HIGH > 0 || MEDIUM > 0 || LOW > 0) {
+        if (CRITICAL> 0 || HIGH > 0 || MEDIUM > 0 || LOW > 0) {
           logGithubStepSummary(`Vulnerabilities found!!`);
 
           let blockLevel = parseBlockLevel(BLOCK_LEVEL)
-          exitIfBlockLevelBreached(HIGH > 0 ? 3 : (MEDIUM > 0 ? 2 : (LOW > 0 ? 1 : -10)));
+          exitIfBlockLevelBreached((CRITICAL > 0 || HIGH > 0) ? 3 : (MEDIUM > 0 ? 2 : (LOW > 0 ? 1 : -10)));
         }
 
         break;
