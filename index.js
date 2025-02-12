@@ -10,6 +10,36 @@ const OVERRIDDEN_TEST_APP_URL = process.env['OVERRIDDEN_TEST_APP_URL']
 const WAIT_TIME_FOR_RESULT = process.env['WAIT_TIME_FOR_RESULT']
 const BLOCK_LEVEL = process.env['BLOCK_LEVEL'] || "HIGH"
 const GITHUB_COMMIT_ID = process.env['GITHUB_COMMIT_ID']
+const CICD_PLATFORM = process.env.CICD_PLATFORM
+const GITHUB_REPOSITORY = process.env.GITHUB_REPOSITORY
+const GITHUB_SERVER_URL = process.env.GITHUB_SERVER_URL
+const GITHUB_REF_NAME = process.env.GITHUB_REF_NAME
+const GITHUB_SHA = process.env.GITHUB_SHA
+const GITHUB_REF = process.env.GITHUB_REF
+const POLL_INTERVAL = process.env.POLL_INTERVAL
+const PERCENTAGE_INTERVAL = process.env.PERCENTAGE_INTERVAL
+
+// Default poll interval
+let pollInterval = 5000;
+
+if (POLL_INTERVAL && POLL_INTERVAL.length > 0 && !isNaN(POLL_INTERVAL)) {
+  try {
+    pollInterval = parseInt(POLL_INTERVAL) * 1000
+    console.log("Using polling interval of " + pollInterval / 1000 + " seconds")
+  } catch (e) {
+    console.log("Using default polling interval of " + pollInterval / 1000 + " seconds")
+  }
+}
+
+// Default percentage show interval
+let percentageInterval = 3;
+if (PERCENTAGE_INTERVAL && PERCENTAGE_INTERVAL.length > 0 && !isNaN(PERCENTAGE_INTERVAL)) {
+  try {
+    percentageInterval = parseInt(PERCENTAGE_INTERVAL)
+  } catch (e) {
+    console.log("Using default percentage interval of " + percentageInterval + " seconds")
+  }
+}
 
 async function logGithubStepSummary(message) {
   console.log(`${message}`);
@@ -25,9 +55,14 @@ function toInt(a) {
   return ret;
 }
 
+let isFirst = true;
+
 async function fetchTestingRunResultSummary(testingRunResultSummaryHexId) {
   try {
-    console.log("testingRunResultSummaryHexId: ", testingRunResultSummaryHexId);
+    if (isFirst) {
+      console.log("testingRunResultSummaryHexId: ", testingRunResultSummaryHexId);
+      isFirst = false
+    }
     const result = await axios.post(`${AKTO_DASHBOARD_URL}/api/fetchTestingRunResultSummary`, {
       testingRunResultSummaryHexId
     }, {
@@ -60,12 +95,20 @@ function parseBlockLevel(BLOCK_LEVEL) {
 
 }
 
+function calcPercentage(num, dom) {
+  if (dom == 0) {
+    return 0;
+  }
+  return Math.round((num * 100) / dom)
+}
 
 async function waitTillComplete(testDetails, maxWaitTime) {
   let testingRunResultSummaryHexId = testDetails.testingRunResultSummaryHexId
   if (!testingRunResultSummaryHexId) return;
 
   const pollStartTime = Math.floor(Date.now() / 1000);
+  let lastPercentage = -10;
+
   while (true) {
     pollCurrentTime = Math.floor(Date.now() / 1000);
     elapsed = pollCurrentTime - pollStartTime;
@@ -79,14 +122,33 @@ async function waitTillComplete(testDetails, maxWaitTime) {
     if (response) {
       state = response.testingRunResultSummaries[0]?.state;
 
+      let { testInitiatedCount, testResultsCount, totalApis, countIssues } = response.testingRunResultSummaries[0];
+      let { CRITICAL, HIGH, MEDIUM, LOW } = countIssues;
+      if (!CRITICAL) {
+        CRITICAL = 0
+      }
+      if (!HIGH) {
+        HIGH = 0
+      }
+      if (!MEDIUM) {
+        MEDIUM = 0
+      }
+      if (!LOW) {
+        LOW = 0
+      }
+      if (!testInitiatedCount) {
+        testInitiatedCount = 0;
+      }
+      if (!testResultsCount) {
+        testResultsCount = 0;
+      }
+      if (!totalApis) {
+        totalApis = 0;
+      }
       if (state === 'COMPLETED') {
-        const { countIssues } = response.testingRunResultSummaries[0];
-        let { CRITICAL, HIGH, MEDIUM, LOW } = countIssues;
-
-        if (!CRITICAL) {
-          CRITICAL = 0
+        if (lastPercentage != 100) {
+          logGithubStepSummary("Test progress: 100%")
         }
-
         logGithubStepSummary(`[Results](${AKTO_DASHBOARD_URL}/dashboard/testing/${AKTO_TEST_ID}/results)`);
         logGithubStepSummary(`CRITICAL: ${CRITICAL}`);
         logGithubStepSummary(`HIGH: ${HIGH}`);
@@ -104,10 +166,19 @@ async function waitTillComplete(testDetails, maxWaitTime) {
       } else if (state === 'STOPPED') {
         logGithubStepSummary(`Test stopped`);
         break;
+      } else if (state === 'RUNNING') {
+
+        let tempPercentage = calcPercentage(testResultsCount, testInitiatedCount * totalApis);
+        if ((tempPercentage - lastPercentage) > percentageInterval) {
+          lastPercentage = tempPercentage;
+          logGithubStepSummary("Test progress: " + lastPercentage + "%")
+          logGithubStepSummary("Issues found till now: " + "CRITICAL: " + CRITICAL + " HIGH: " + HIGH + " MEDIUM: " + MEDIUM + " LOW: " + LOW)
+        }
+
       } else {
-        console.log('Waiting for akto test to be completed...');
-        await new Promise(resolve => setTimeout(resolve, 5000)); // 5 seconds
+        logGithubStepSummary('Waiting for akto test to be completed...');
       }
+      await new Promise(resolve => setTimeout(resolve, pollInterval));
     } else {
       break;
     }
@@ -131,17 +202,37 @@ async function run() {
     AKTO_START_TEST_ENDPOINT = AKTO_DASHBOARD_URL + "/api/startTest"
   }
 
+  let cicdPlatform = "Github Actions"
+  if(CICD_PLATFORM){
+    cicdPlatform = CICD_PLATFORM
+  }
+
    const data = {
     "testingRunHexId": AKTO_TEST_ID,
     "startTimestamp" : startTimestamp,
     "metadata": {
-      "platform": process.env.CICD_PLATFORM || "Github Actions",
-      "repository": process.env.GITHUB_REPOSITORY,
-      "repository_url": process.env.GITHUB_SERVER_URL + "/" + process.env.GITHUB_REPOSITORY, 
-      "branch": process.env.GITHUB_REF_NAME,
-      "commit_sha": process.env.GITHUB_SHA,
-      "pull_request_id" : process.env.GITHUB_REF
+      "platform": cicdPlatform,
     }
+  }
+  
+  if(GITHUB_REPOSITORY){
+    data["metadata"]["repository"] = GITHUB_REPOSITORY
+  }
+
+  if(GITHUB_SERVER_URL && GITHUB_REPOSITORY){
+    data["metadata"]["repository_url"] = GITHUB_SERVER_URL + "/" + GITHUB_REPOSITORY
+  }
+
+  if(GITHUB_REF_NAME){
+    data["metadata"]["branch"] = GITHUB_REF_NAME
+  }
+
+  if(GITHUB_SHA){
+    data["metadata"]["commit_sha"] = GITHUB_SHA
+  }
+
+  if(GITHUB_REF){
+    data["metadata"]["pull_request_id"] = GITHUB_REF
   }
 
   if (OVERRIDDEN_TEST_APP_URL) {
