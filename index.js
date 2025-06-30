@@ -1,6 +1,6 @@
 //const core = require('@actions/core');
-const axios = require("axios")
-const fs = require('fs');
+import axios from 'axios';
+import { runForGroup } from "./utils.js"
 
 const AKTO_DASHBOARD_URL = process.env['AKTO_DASHBOARD_URL']
 const AKTO_API_KEY = process.env['AKTO_API_KEY']
@@ -18,6 +18,8 @@ const GITHUB_SHA = process.env.GITHUB_SHA
 const GITHUB_REF = process.env.GITHUB_REF
 const POLL_INTERVAL = process.env.POLL_INTERVAL
 const PERCENTAGE_INTERVAL = process.env.PERCENTAGE_INTERVAL
+const API_GROUP_NAME = process.env.API_GROUP_NAME || "";
+const TEST_SUITE_NAME = process.env.TEST_SUITE_NAME || "";
 
 // Default poll interval
 let pollInterval = 5000;
@@ -185,10 +187,9 @@ async function waitTillComplete(testDetails, maxWaitTime) {
   }
 }
 
-async function run() {
-  console.log(AKTO_DASHBOARD_URL, AKTO_TEST_ID, START_TIME_DELAY, OVERRIDDEN_TEST_APP_URL, WAIT_TIME_FOR_RESULT, BLOCK_LEVEL)
-  let AKTO_START_TEST_ENDPOINT = ""
+function createInitPayload(testingRunHexId){
   let startTimestamp = 0;
+  let AKTO_START_TEST_ENDPOINT = ""
   if(START_TIME_DELAY!=''){
     let delay = parseInt(START_TIME_DELAY);
     if(!isNaN(delay)){
@@ -208,7 +209,7 @@ async function run() {
   }
 
    const data = {
-    "testingRunHexId": AKTO_TEST_ID,
+    "testingRunHexId": testingRunHexId,
     "startTimestamp" : startTimestamp,
     "metadata": {
       "platform": cicdPlatform,
@@ -253,6 +254,16 @@ async function run() {
     data: data
   }
 
+  return config;
+}
+
+async function run() {
+  console.log(AKTO_DASHBOARD_URL, AKTO_TEST_ID, START_TIME_DELAY, OVERRIDDEN_TEST_APP_URL, WAIT_TIME_FOR_RESULT, BLOCK_LEVEL, API_GROUP_NAME, TEST_SUITE_NAME)
+  const config = createInitPayload(AKTO_TEST_ID);
+  if(API_GROUP_NAME.length > 0 && TEST_SUITE_NAME.length > 0) {
+    runForGroup(API_GROUP_NAME, TEST_SUITE_NAME, config, WAIT_TIME_FOR_RESULT)
+  }
+
   try {
     res = await axios(config)
     console.log("Akto CI/CD test started")
@@ -266,3 +277,5 @@ async function run() {
 }
 
 run();
+
+export {createInitPayload}
