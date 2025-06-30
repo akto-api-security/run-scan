@@ -1,5 +1,6 @@
 const { runForGroup } = require('./utils.js');
 const { createInitPayload } = require('./helpers.js');
+const axios = require('axios');
 
 const AKTO_DASHBOARD_URL = process.env['AKTO_DASHBOARD_URL']
 const AKTO_API_KEY = process.env['AKTO_API_KEY']
