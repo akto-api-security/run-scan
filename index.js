@@ -280,4 +280,4 @@ async function run() {
 
 run();
 
-export {createInitPayload}
+module.exports = { createInitPayload };

@@ -126,7 +126,4 @@ async function runForGroup(apiGroupName, testSuiteName, configObj, waitTimeForRe
 
     return await axios(configObjNew);
 }
-
-export {
-    runForGroup
-};
+module.exports = { runForGroup };
