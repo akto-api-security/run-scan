@@ -6,7 +6,7 @@ const GET_ALL_COLLECTIONS = 'api/getAllCollections';
 const RUN_TEST = 'api/startTest';
 const ALL_TEST_SUITES = 'api/fetchAllTestSuites';
 const ALL_TEST_RUNS = 'api/retrieveAllCollectionTests';
-const AKTO_DASHBOARD_URL = process.env['AKTO_DASHBOARD_URL'] ? process.env['AKTO_DASHBOARD_URL'].endsWith('/') ? process.env['AKTO_DASHBOARD_URL'] : process.env['AKTO_DASHBOARD_URL'] + '/' : 'http://localhost:8080/';
+const AKTO_DASHBOARD_URL = process.env['AKTO_DASHBOARD_URL'] ? process.env['AKTO_DASHBOARD_URL'].endsWith('/') ? process.env['AKTO_DASHBOARD_URL'] : process.env['AKTO_DASHBOARD_URL'] + '/' : 'https://app.akto.io/';
 const headers = {
     'Content-Type': 'application/json',
     'X-API-KEY': process.env['AKTO_API_KEY'] || '',
@@ -108,8 +108,7 @@ async function runForGroup(apiGroupName, testSuiteName, configObj, waitTimeForRe
     const testRunID = await checkIfTestRunExists(testRunName);
     if (testRunID.length > 0){
         configObj.data["testingRunHexId"] = testRunID;
-        await axios(configObj);
-        return;
+        return await axios(configObj);
     }
     const apiCollectionId = await getCollectionId(apiGroupName);
     if (!apiCollectionId) {
@@ -125,7 +124,7 @@ async function runForGroup(apiGroupName, testSuiteName, configObj, waitTimeForRe
     const response = await sendRequestForInit(apiCollectionId, apiGroupName, testSuiteId, "", configObj?.overriddenTestAppUrl || "", testSuiteName, runTime);
     const configObjNew = createInitPayload(response.testingRunHexId);
 
-    await axios(configObjNew);
+    return await axios(configObjNew);
 }
 
 export {

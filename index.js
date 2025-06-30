@@ -260,12 +260,15 @@ function createInitPayload(testingRunHexId){
 async function run() {
   console.log(AKTO_DASHBOARD_URL, AKTO_TEST_ID, START_TIME_DELAY, OVERRIDDEN_TEST_APP_URL, WAIT_TIME_FOR_RESULT, BLOCK_LEVEL, API_GROUP_NAME, TEST_SUITE_NAME)
   const config = createInitPayload(AKTO_TEST_ID);
-  if(API_GROUP_NAME.length > 0 && TEST_SUITE_NAME.length > 0) {
-    runForGroup(API_GROUP_NAME, TEST_SUITE_NAME, config, WAIT_TIME_FOR_RESULT)
-  }
 
   try {
-    res = await axios(config)
+    let res = {}
+    if(API_GROUP_NAME.length > 0 && TEST_SUITE_NAME.length > 0) {
+      res = await runForGroup(API_GROUP_NAME, TEST_SUITE_NAME, config, WAIT_TIME_FOR_RESULT)
+    }else{
+      res = await axios(config)
+    }
+    
     console.log("Akto CI/CD test started")
 
     let waitTimeForResult = toInt(WAIT_TIME_FOR_RESULT)
