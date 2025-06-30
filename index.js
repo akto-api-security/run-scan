@@ -1,6 +1,5 @@
-//const core = require('@actions/core');
-import axios from 'axios';
-import { runForGroup } from "./utils.js"
+const axios = require('axios');
+const { runForGroup } = require('./utils.js');
 
 const AKTO_DASHBOARD_URL = process.env['AKTO_DASHBOARD_URL']
 const AKTO_API_KEY = process.env['AKTO_API_KEY']

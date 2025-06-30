@@ -1,5 +1,5 @@
-import axios from 'axios';
-import { createInitPayload } from './index.js';
+const axios = require('axios');
+const { createInitPayload } = require('./index.js');
 
 
 const GET_ALL_COLLECTIONS = 'api/getAllCollections';
