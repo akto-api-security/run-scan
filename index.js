@@ -1,5 +1,5 @@
-const axios = require('axios');
 const { runForGroup } = require('./utils.js');
+const { createInitPayload } = require('./helpers.js');
 
 const AKTO_DASHBOARD_URL = process.env['AKTO_DASHBOARD_URL']
 const AKTO_API_KEY = process.env['AKTO_API_KEY']
@@ -186,76 +186,6 @@ async function waitTillComplete(testDetails, maxWaitTime) {
   }
 }
 
-function createInitPayload(testingRunHexId){
-  let startTimestamp = 0;
-  let AKTO_START_TEST_ENDPOINT = ""
-  if(START_TIME_DELAY!=''){
-    let delay = parseInt(START_TIME_DELAY);
-    if(!isNaN(delay)){
-      startTimestamp = Date.now()/1000 + delay;
-    }
-  }
-
-  if (AKTO_DASHBOARD_URL.endsWith("/")) {
-    AKTO_START_TEST_ENDPOINT = AKTO_DASHBOARD_URL + "api/startTest"
-  } else {
-    AKTO_START_TEST_ENDPOINT = AKTO_DASHBOARD_URL + "/api/startTest"
-  }
-
-  let cicdPlatform = "Github Actions"
-  if(CICD_PLATFORM){
-    cicdPlatform = CICD_PLATFORM
-  }
-
-   const data = {
-    "testingRunHexId": testingRunHexId,
-    "startTimestamp" : startTimestamp,
-    "metadata": {
-      "platform": cicdPlatform,
-    }
-  }
-  
-  if(GITHUB_REPOSITORY){
-    data["metadata"]["repository"] = GITHUB_REPOSITORY
-  }
-
-  if(GITHUB_SERVER_URL && GITHUB_REPOSITORY){
-    data["metadata"]["repository_url"] = GITHUB_SERVER_URL + "/" + GITHUB_REPOSITORY
-  }
-
-  if(GITHUB_REF_NAME){
-    data["metadata"]["branch"] = GITHUB_REF_NAME
-  }
-
-  if(GITHUB_SHA){
-    data["metadata"]["commit_sha"] = GITHUB_SHA
-  }
-
-  if(GITHUB_REF){
-    data["metadata"]["pull_request_id"] = GITHUB_REF
-  }
-
-  if (OVERRIDDEN_TEST_APP_URL) {
-    data["overriddenTestAppUrl"] = OVERRIDDEN_TEST_APP_URL
-  }
-
-  if (GITHUB_COMMIT_ID) {
-    data["metadata"]["commit_sha_head"] = GITHUB_COMMIT_ID
-  }
-
-  const config = {
-    method: 'post',
-    url: AKTO_START_TEST_ENDPOINT,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-API-KEY': AKTO_API_KEY,
-    },
-    data: data
-  }
-
-  return config;
-}
-
 async function run() {
   console.log(AKTO_DASHBOARD_URL, AKTO_TEST_ID, START_TIME_DELAY, OVERRIDDEN_TEST_APP_URL, WAIT_TIME_FOR_RESULT, BLOCK_LEVEL, API_GROUP_NAME, TEST_SUITE_NAME)
   const config = createInitPayload(AKTO_TEST_ID);
@@ -279,5 +209,3 @@ async function run() {
 }
 
 run();
-
-module.exports = { createInitPayload };

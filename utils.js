@@ -1,5 +1,5 @@
 const axios = require('axios');
-const { createInitPayload } = require('./index.js');
+const { createInitPayload } = require('./helpers.js');
 
 
 const GET_ALL_COLLECTIONS = 'api/getAllCollections';
