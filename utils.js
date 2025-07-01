@@ -48,7 +48,7 @@ async function getTestSuiteId(testSuiteName) {
     return null;
 }
 
-async function sendRequestForInit(apiCollectionId, apiGroupName, testSuiteId, testRoleId, overriddenTestAppUrl, testSuiteName, waitTimeForResult) {
+async function sendRequestForInit(apiCollectionId, apiGroupName, testSuiteId, testRoleId, overriddenTestAppUrl, testSuiteName, waitTimeForResult, metaData) {
     const timeNow = Math.floor(Date.now() / 1000);
 
     const data = {
@@ -70,7 +70,8 @@ async function sendRequestForInit(apiCollectionId, apiGroupName, testSuiteId, te
         testConfigsAdvancedSettings: [],
         cleanUpTestingResources: false,
         testSuiteIds: [testSuiteId],
-        autoTicketingDetails: null
+        autoTicketingDetails: null,
+        metaData: metaData
     };
 
     try {
@@ -121,9 +122,8 @@ async function runForGroup(apiGroupName, testSuiteName, configObj, waitTimeForRe
         return;
     }
 
-    const response = await sendRequestForInit(apiCollectionId, apiGroupName, testSuiteId, "", configObj?.overriddenTestAppUrl || "", testSuiteName, runTime);
-    const configObjNew = createInitPayload(response.testingRunHexId);
+    const configObjNew = createInitPayload("");
 
-    return await axios(configObjNew);
+    const response = await sendRequestForInit(apiCollectionId, apiGroupName, testSuiteId, "", configObj?.overriddenTestAppUrl || "", testSuiteName, runTime, configObjNew.data.metadata);
 }
 module.exports = { runForGroup };
