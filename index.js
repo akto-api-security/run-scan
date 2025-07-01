@@ -1,6 +1,9 @@
-//const core = require('@actions/core');
-const axios = require("axios")
-const fs = require('fs');
+// const { runForGroup } = require('./utils.js');
+// const { createInitPayload } = require('./helpers.js');
+// const axios = require('axios');
+import axios from 'axios';
+import { createInitPayload } from './helpers.js';
+import { runForGroup } from './utils.js';
 
 const AKTO_DASHBOARD_URL = process.env['AKTO_DASHBOARD_URL']
 const AKTO_API_KEY = process.env['AKTO_API_KEY']
@@ -9,15 +12,10 @@ const START_TIME_DELAY = process.env['START_TIME_DELAY']
 const OVERRIDDEN_TEST_APP_URL = process.env['OVERRIDDEN_TEST_APP_URL']
 const WAIT_TIME_FOR_RESULT = process.env['WAIT_TIME_FOR_RESULT']
 const BLOCK_LEVEL = process.env['BLOCK_LEVEL'] || "HIGH"
-const GITHUB_COMMIT_ID = process.env['GITHUB_COMMIT_ID']
-const CICD_PLATFORM = process.env.CICD_PLATFORM
-const GITHUB_REPOSITORY = process.env.GITHUB_REPOSITORY
-const GITHUB_SERVER_URL = process.env.GITHUB_SERVER_URL
-const GITHUB_REF_NAME = process.env.GITHUB_REF_NAME
-const GITHUB_SHA = process.env.GITHUB_SHA
-const GITHUB_REF = process.env.GITHUB_REF
 const POLL_INTERVAL = process.env.POLL_INTERVAL
 const PERCENTAGE_INTERVAL = process.env.PERCENTAGE_INTERVAL
+const API_GROUP_NAME = process.env.API_GROUP_NAME || "";
+const TEST_SUITE_NAME = process.env.TEST_SUITE_NAME || "";
 
 // Default poll interval
 let pollInterval = 5000;
@@ -186,78 +184,21 @@ async function waitTillComplete(testDetails, maxWaitTime) {
 }
 
 async function run() {
-  console.log(AKTO_DASHBOARD_URL, AKTO_TEST_ID, START_TIME_DELAY, OVERRIDDEN_TEST_APP_URL, WAIT_TIME_FOR_RESULT, BLOCK_LEVEL)
-  let AKTO_START_TEST_ENDPOINT = ""
-  let startTimestamp = 0;
-  if(START_TIME_DELAY!=''){
-    let delay = parseInt(START_TIME_DELAY);
-    if(!isNaN(delay)){
-      startTimestamp = Date.now()/1000 + delay;
-    }
-  }
-
-  if (AKTO_DASHBOARD_URL.endsWith("/")) {
-    AKTO_START_TEST_ENDPOINT = AKTO_DASHBOARD_URL + "api/startTest"
-  } else {
-    AKTO_START_TEST_ENDPOINT = AKTO_DASHBOARD_URL + "/api/startTest"
-  }
-
-  let cicdPlatform = "Github Actions"
-  if(CICD_PLATFORM){
-    cicdPlatform = CICD_PLATFORM
-  }
-
-   const data = {
-    "testingRunHexId": AKTO_TEST_ID,
-    "startTimestamp" : startTimestamp,
-    "metadata": {
-      "platform": cicdPlatform,
-    }
-  }
-  
-  if(GITHUB_REPOSITORY){
-    data["metadata"]["repository"] = GITHUB_REPOSITORY
-  }
-
-  if(GITHUB_SERVER_URL && GITHUB_REPOSITORY){
-    data["metadata"]["repository_url"] = GITHUB_SERVER_URL + "/" + GITHUB_REPOSITORY
-  }
-
-  if(GITHUB_REF_NAME){
-    data["metadata"]["branch"] = GITHUB_REF_NAME
-  }
-
-  if(GITHUB_SHA){
-    data["metadata"]["commit_sha"] = GITHUB_SHA
-  }
-
-  if(GITHUB_REF){
-    data["metadata"]["pull_request_id"] = GITHUB_REF
-  }
-
-  if (OVERRIDDEN_TEST_APP_URL) {
-    data["overriddenTestAppUrl"] = OVERRIDDEN_TEST_APP_URL
-  }
-
-  if (GITHUB_COMMIT_ID) {
-    data["metadata"]["commit_sha_head"] = GITHUB_COMMIT_ID
-  }
-
-  const config = {
-    method: 'post',
-    url: AKTO_START_TEST_ENDPOINT,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-API-KEY': AKTO_API_KEY,
-    },
-    data: data
-  }
+  console.log(AKTO_DASHBOARD_URL, AKTO_TEST_ID, START_TIME_DELAY, OVERRIDDEN_TEST_APP_URL, WAIT_TIME_FOR_RESULT, BLOCK_LEVEL, API_GROUP_NAME, TEST_SUITE_NAME)
+  const config = createInitPayload(AKTO_TEST_ID);
 
   try {
-    res = await axios(config)
+    let res = {}
+    if(API_GROUP_NAME.length > 0 && TEST_SUITE_NAME.length > 0) {
+      res = await runForGroup(API_GROUP_NAME, TEST_SUITE_NAME, config, WAIT_TIME_FOR_RESULT)
+    }else{
+      res = await axios(config)
+    }
+    
     console.log("Akto CI/CD test started")
 
     let waitTimeForResult = toInt(WAIT_TIME_FOR_RESULT)
+    // console.log("res: ", res);
     waitTillComplete(res.data, waitTimeForResult);
 
   } catch (error) {
