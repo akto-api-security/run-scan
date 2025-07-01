@@ -1,6 +1,9 @@
-const { runForGroup } = require('./utils.js');
-const { createInitPayload } = require('./helpers.js');
-const axios = require('axios');
+// const { runForGroup } = require('./utils.js');
+// const { createInitPayload } = require('./helpers.js');
+// const axios = require('axios');
+import axios from 'axios';
+import { createInitPayload } from './helpers.js';
+import { runForGroup } from './utils.js';
 
 const AKTO_DASHBOARD_URL = process.env['AKTO_DASHBOARD_URL']
 const AKTO_API_KEY = process.env['AKTO_API_KEY']
@@ -195,6 +198,7 @@ async function run() {
     console.log("Akto CI/CD test started")
 
     let waitTimeForResult = toInt(WAIT_TIME_FOR_RESULT)
+    // console.log("res: ", res);
     waitTillComplete(res.data, waitTimeForResult);
 
   } catch (error) {

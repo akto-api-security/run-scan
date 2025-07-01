@@ -57,3 +57,4 @@ function createInitPayload(testingRunHexId) {
 }
 
 module.exports = { createInitPayload };
+// export { createInitPayload };

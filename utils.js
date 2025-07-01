@@ -1,5 +1,7 @@
 const axios = require('axios');
 const { createInitPayload } = require('./helpers.js');
+// import axios from 'axios';
+// import { createInitPayload } from './helpers.js';
 
 
 const GET_ALL_COLLECTIONS = 'api/getAllCollections';
@@ -71,12 +73,12 @@ async function sendRequestForInit(apiCollectionId, apiGroupName, testSuiteId, te
         cleanUpTestingResources: false,
         testSuiteIds: [testSuiteId],
         autoTicketingDetails: null,
-        metaData: metaData
+        metadata: metaData
     };
 
     try {
         const response = await axios.post(`${AKTO_DASHBOARD_URL}${RUN_TEST}`, data, { headers });
-        return response.data;
+        return response;
     } catch (error) {
         console.error(`Failed to trigger test for ${apiGroupName}. Status: ${error.response?.status}`);
     }
@@ -123,7 +125,8 @@ async function runForGroup(apiGroupName, testSuiteName, configObj, waitTimeForRe
     }
 
     const configObjNew = createInitPayload("");
-
     const response = await sendRequestForInit(apiCollectionId, apiGroupName, testSuiteId, "", configObj?.overriddenTestAppUrl || "", testSuiteName, runTime, configObjNew.data.metadata);
+    return response;
 }
 module.exports = { runForGroup };
+// export { runForGroup }
