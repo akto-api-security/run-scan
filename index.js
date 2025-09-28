@@ -16,6 +16,7 @@ const POLL_INTERVAL = process.env.POLL_INTERVAL
 const PERCENTAGE_INTERVAL = process.env.PERCENTAGE_INTERVAL
 const API_GROUP_NAME = process.env.API_GROUP_NAME || "";
 const TEST_SUITE_NAME = process.env.TEST_SUITE_NAME || "";
+const FAIL_IF_BREACHED = process.env.FAIL_IF_BREACHED;
 
 // Default poll interval
 let pollInterval = 5000;
@@ -78,7 +79,15 @@ async function fetchTestingRunResultSummary(testingRunResultSummaryHexId) {
 }
 
 function exitIfBlockLevelBreached(resultLevel, blockLevel) {
-  if (blockLevel <= resultLevel) console.log("Found vulnerabilties");
+  if (blockLevel <= resultLevel) {
+    console.log("Found vulnerabilties");
+    
+    // Exit process with code 1 if FAIL_IF_BREACHED is set
+    if (FAIL_IF_BREACHED) {
+      console.log("FAIL_IF_BREACHED is set. Exiting with code 1 due to block level breach.");
+      process.exit(1);
+    }
+  }
 }
 
 function parseBlockLevel(BLOCK_LEVEL) {
