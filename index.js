@@ -81,7 +81,6 @@ function exitIfBlockLevelBreached(resultLevel, blockLevel) {
   if (blockLevel <= resultLevel) {
     console.log("Found vulnerabilties");
     process.exit(1);
-    }
   }
 }
 
