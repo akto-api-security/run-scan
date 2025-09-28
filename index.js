@@ -78,7 +78,10 @@ async function fetchTestingRunResultSummary(testingRunResultSummaryHexId) {
 }
 
 function exitIfBlockLevelBreached(resultLevel, blockLevel) {
-  if (blockLevel <= resultLevel) console.log("Found vulnerabilties");
+  if (blockLevel <= resultLevel) {
+    console.log("Found vulnerabilties");
+    process.exit(1);
+  }
 }
 
 function parseBlockLevel(BLOCK_LEVEL) {
@@ -157,7 +160,7 @@ async function waitTillComplete(testDetails, maxWaitTime) {
           logGithubStepSummary(`Vulnerabilities found!!`);
 
           let blockLevel = parseBlockLevel(BLOCK_LEVEL)
-          exitIfBlockLevelBreached((CRITICAL > 0 || HIGH > 0) ? 3 : (MEDIUM > 0 ? 2 : (LOW > 0 ? 1 : -10)));
+          exitIfBlockLevelBreached((CRITICAL > 0 || HIGH > 0) ? 3 : (MEDIUM > 0 ? 2 : (LOW > 0 ? 1 : -10)), blockLevel);
         }
 
         break;
