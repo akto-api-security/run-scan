@@ -1,0 +1,63 @@
+pipeline {
+    agent any
+
+    environment {
+        IS_COMMIT_TRUNK = 'true'  
+        API_GROUP_NAME = 'juice_group'  
+        TEST_SUITE_NAME = 'Standard'
+        BLOCK_LEVEL='LOW'
+    }
+
+    stages {
+        stage('Run Akto Security Test') {
+            when {
+                environment name: 'IS_COMMIT_TRUNK', value: 'true'
+            }
+            steps {
+                script {
+                    try {
+                        
+                        runAktoTest(env.API_GROUP_NAME, env.TEST_SUITE_NAME, env.BLOCK_LEVEL, 3000)
+                        echo "Akto security test completed successfully."
+                    } catch (Exception e) {
+                        currentBuild.result = 'FAILURE'
+                        error """
+                            Akto security test failed:
+                            - API Group: ${env.API_GROUP_NAME}
+                            - Test Suite: ${env.TEST_SUITE_NAME }
+                            - Error details: ${e.message}
+                            - Please check the Akto dashboard for more information.
+                            - Ensure API key, API Group Name, and Test Suite Name are correct.
+                        """
+                    }
+                }
+            }
+        }
+    }
+}
+
+def runAktoTest(String apiGroupName, String testSuiteName = 'MiQ Test Suite', String blockLevel='', int waitTime = 3000) {
+    // withCredentials([string(credentialsId: 'akto-api-key', variable: 'AKTO_API_KEY')]) {
+        
+        def dockerOutput = sh(script: """
+            docker run \
+            -e AKTO_DASHBOARD_URL='https://app.akto.io' \
+            -e AKTO_API_KEY='${AKTO_API_KEY}' \
+            -e WAIT_TIME_FOR_RESULT=${waitTime} \
+            -e API_GROUP_NAME='${apiGroupName}' \
+            -e TEST_SUITE_NAME='${testSuiteName}' \
+            -e BLOCK_LEVEL='${blockLevel}' \
+            -e CICD_PLATFORM='Jenkins' \
+            aktosecurity/akto-testing-scan:latest
+        """, returnStdout: true).trim()
+
+        // Check if the docker output contains failure indication
+        if (dockerOutput.contains("Block level breached")) {
+            error """
+                ${dockerOutput}
+            """
+        } else {
+            echo "Akto security test completed successfully."
+        }
+    // }
+}
