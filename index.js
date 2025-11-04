@@ -78,7 +78,7 @@ async function fetchTestingRunResultSummary(testingRunResultSummaryHexId) {
 }
 
 function exitIfBlockLevelBreached(resultLevel, blockLevel) {
-  if (blockLevel <= resultLevel) console.log("Found vulnerabilities");
+  if (blockLevel <= resultLevel) console.log("Block level breached");
 }
 
 function parseBlockLevel(BLOCK_LEVEL) {
@@ -147,7 +147,9 @@ async function waitTillComplete(testDetails, maxWaitTime) {
         if (lastPercentage != 100) {
           logGithubStepSummary("Test progress: 100%")
         }
-        logGithubStepSummary(`[Results](${AKTO_DASHBOARD_URL}/dashboard/testing/${AKTO_TEST_ID}/results)`);
+        if (AKTO_TEST_ID && AKTO_TEST_ID != undefined && AKTO_TEST_ID.length > 0){
+          logGithubStepSummary(`[Results](${AKTO_DASHBOARD_URL}/dashboard/testing/${AKTO_TEST_ID}/results)`);
+        }
         logGithubStepSummary(`CRITICAL: ${CRITICAL}`);
         logGithubStepSummary(`HIGH: ${HIGH}`);
         logGithubStepSummary(`MEDIUM: ${MEDIUM}`);
