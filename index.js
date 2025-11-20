@@ -9,11 +9,10 @@ const START_TIME_DELAY = core.getInput('START_TIME_DELAY')
 const OVERRIDDEN_TEST_APP_URL = core.getInput('OVERRIDDEN_TEST_APP_URL')
 const WAIT_TIME_FOR_RESULT = core.getInput('WAIT_TIME_FOR_RESULT')
 const BLOCK_LEVEL = core.getInput('BLOCK_LEVEL') || "HIGH"
-const GITHUB_STEP_SUMMARY = process.env.GITHUB_STEP_SUMMARY
 const GITHUB_COMMIT_ID = core.getInput('GITHUB_COMMIT_ID')
 
 async function logGithubStepSummary(message) {
-  await core.summary.addRaw(`${message}`).addEOL();
+  await core.summary.addRaw(`${message}`).addEOL().write();
 }
 
 function toInt(a) {
@@ -46,7 +45,7 @@ async function fetchTestingRunResultSummary(testingRunResultSummaryHexId) {
 }
 
 function exitIfBlockLevelBreached(resultLevel, blockLevel) {
-  if (blockLevel <= resultLevel) core.setFailed("Found vulnerabilties");
+  if (blockLevel <= resultLevel) core.setFailed("Found vulnerabilities");
 }
 
 function parseBlockLevel(BLOCK_LEVEL) {
@@ -59,7 +58,6 @@ function parseBlockLevel(BLOCK_LEVEL) {
  return 10;
 
 }
-
 
 async function waitTillComplete(testDetails, maxWaitTime) {
   let testingRunResultSummaryHexId = testDetails.testingRunResultSummaryHexId
@@ -83,21 +81,21 @@ async function waitTillComplete(testDetails, maxWaitTime) {
         const { countIssues } = response.testingRunResultSummaries[0];
         const { HIGH, MEDIUM, LOW } = countIssues;
 
-        logGithubStepSummary(`[Results](${AKTO_DASHBOARD_URL}/dashboard/testing/${AKTO_TEST_ID}/results)`);
-        logGithubStepSummary(`HIGH: ${HIGH}`);
-        logGithubStepSummary(`MEDIUM: ${MEDIUM}`);
-        logGithubStepSummary(`LOW: ${LOW}`);
+        await logGithubStepSummary(`[Results](${AKTO_DASHBOARD_URL}/dashboard/testing/${AKTO_TEST_ID}/results)`);
+        await logGithubStepSummary(`HIGH: ${HIGH}`);
+        await logGithubStepSummary(`MEDIUM: ${MEDIUM}`);
+        await logGithubStepSummary(`LOW: ${LOW}`);
 
         if (HIGH > 0 || MEDIUM > 0 || LOW > 0) {
-          logGithubStepSummary(`Vulnerabilities found!!`);
+          await logGithubStepSummary(`Vulnerabilities found!!`);
 
           let blockLevel = parseBlockLevel(BLOCK_LEVEL)
-          exitIfBlockLevelBreached(HIGH > 0 ? 3 : (MEDIUM > 0 ? 2 : (LOW > 0 ? 1 : -10)));
+          exitIfBlockLevelBreached(HIGH > 0 ? 3 : (MEDIUM > 0 ? 2 : (LOW > 0 ? 1 : -10)), blockLevel);
         }
 
         break;
       } else if (state === 'STOPPED') {
-        logGithubStepSummary(`Test stopped`);
+        await logGithubStepSummary(`Test stopped`);
         break;
       } else {
         console.log('Waiting for akto test to be completed...');
@@ -162,7 +160,7 @@ async function run() {
     console.log("Akto CI/CD test started")
 
     let waitTimeForResult = toInt(WAIT_TIME_FOR_RESULT)
-    waitTillComplete(res.data, waitTimeForResult);
+    await waitTillComplete(res.data, waitTimeForResult);
 
   } catch (error) {
     core.setFailed(error.message);
