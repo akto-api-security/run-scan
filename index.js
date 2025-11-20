@@ -79,9 +79,21 @@ async function waitTillComplete(testDetails, maxWaitTime) {
 
       if (state === 'COMPLETED') {
         const { countIssues } = response.testingRunResultSummaries[0];
-        const { HIGH, MEDIUM, LOW } = countIssues;
-
-        await logGithubStepSummary(`[Results](${AKTO_DASHBOARD_URL}/dashboard/testing/${AKTO_TEST_ID}/results)`);
+        const { CRITICAL, HIGH, MEDIUM, LOW } = countIssues;
+        if (!CRITICAL) {
+          CRITICAL = 0
+        }
+        if (!HIGH) {
+          HIGH = 0
+        }
+        if (!MEDIUM) {
+          MEDIUM = 0
+        }
+        if (!LOW) {
+          LOW = 0
+        }
+        await logGithubStepSummary(`[Results](${AKTO_DASHBOARD_URL}/dashboard/testing/${AKTO_TEST_ID})`);
+        await logGithubStepSummary(`CRITICAL: ${CRITICAL}`);
         await logGithubStepSummary(`HIGH: ${HIGH}`);
         await logGithubStepSummary(`MEDIUM: ${MEDIUM}`);
         await logGithubStepSummary(`LOW: ${LOW}`);
