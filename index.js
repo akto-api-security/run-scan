@@ -79,7 +79,7 @@ async function waitTillComplete(testDetails, maxWaitTime) {
 
       if (state === 'COMPLETED') {
         const { countIssues } = response.testingRunResultSummaries[0];
-        const { CRITICAL, HIGH, MEDIUM, LOW } = countIssues;
+        let { CRITICAL, HIGH, MEDIUM, LOW } = countIssues;
         if (!CRITICAL) {
           CRITICAL = 0
         }
