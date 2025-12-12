@@ -169,7 +169,7 @@ async function sendRequestForInit(apiCollectionId, apiGroupName, testSuiteId, te
         sendSlackAlert: options.sendSlackAlert === true,
         sendMsTeamsAlert: options.sendMsTeamsAlert === true,
         testConfigsAdvancedSettings: testConfigsAdvancedSettings,
-        cleanUpTestingResources: false,
+        cleanUpTestingResources: options.cleanUpTestingResources === true,
         testSuiteIds: options.testSuiteIds || [testSuiteId],
         autoTicketingDetails: autoTicketingDetails,
         selectedMiniTestingServiceName: options.selectedMiniTestingServiceName || null,
@@ -265,6 +265,7 @@ async function runForGroup(apiGroupName, testSuiteName, configObj, waitTimeForRe
         
         // Other options
         overriddenTestAppUrl: configObj?.overriddenTestAppUrl || process.env['OVERRIDDEN_TEST_APP_URL'] || "",
+        cleanUpTestingResources: configObj?.cleanUpTestingResources === true || process.env['AKTO_CLEANUP_TESTING_RESOURCES'] === 'true',
         doNotMarkIssuesAsFixed: configObj?.doNotMarkIssuesAsFixed === true || process.env['AKTO_DO_NOT_MARK_ISSUES_AS_FIXED'] === 'true',
         selectedTests: configObj?.selectedTests || [],
         testSuiteIds: configObj?.testSuiteIds

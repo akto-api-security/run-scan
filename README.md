@@ -101,6 +101,7 @@ The following environment variables can be used to configure test runs, matching
 
 ### Advanced Options
 
+- `AKTO_CLEANUP_TESTING_RESOURCES`: Set to `true` to clean up testing resources after completion
 - `AKTO_DO_NOT_MARK_ISSUES_AS_FIXED`: Set to `true` to prevent marking issues as fixed if they don't show up again. 
   - When the "Mark issues as fixed" checkbox is checked in the UI, this value is `false` (default)
   - When unchecked, this value is `true`
