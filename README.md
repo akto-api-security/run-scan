@@ -116,10 +116,50 @@ docker run \
   -e AKTO_START_DATE='2025-12-11' \
   -e AKTO_START_TIME='14:30' \
   -e AKTO_TEST_RUN_TIME='30' \
+  -e AKTO_TEST_ROLE_ID='role_12345' \
   -e AKTO_MAX_CONCURRENT_REQUESTS='50' \
+  -e OVERRIDDEN_TEST_APP_URL='https://staging.example.com' \
   -e AKTO_SEND_SLACK_ALERT='true' \
   -e AKTO_SLACK_WEBHOOK_ID='12345' \
   -e AKTO_SEND_MS_TEAMS_ALERT='true' \
-  -e OVERRIDDEN_TEST_APP_URL='https://staging.example.com' \
+  -e AKTO_AUTO_TICKETING_DETAILS='{"enabled": true, "provider": "jira", "projectId": "PROJ-123"}' \
+  -e AKTO_TEST_CONFIGS_ADVANCED_SETTINGS='[{"operatorType":"ADD_HEADER","operationsGroupList":[{"key":"X-Custom-Header","value":"custom-value"}]},{"operatorType":"MODIFY_BODY_PARAM","operationsGroupList":[{"key":"param1","value":"new-value"}]}]' \
+  -e AKTO_DO_NOT_MARK_ISSUES_AS_FIXED='false' \
+  -e WAIT_TIME_FOR_RESULT='1800' \
+  aktosecurity/akto-testing-scan:latest
+```
+
+### Example with advanced configurations (multi-line JSON)
+
+For better readability, you can use a here-document or environment file for complex JSON:
+
+```bash
+# Using environment file
+cat > .env << 'EOF'
+AKTO_DASHBOARD_URL=https://app.akto.io
+AKTO_API_KEY=<AKTO_API_KEY>
+API_GROUP_NAME=My API Collection
+TEST_SUITE_NAME=Security Tests
+AKTO_START_DATE=2025-12-11
+AKTO_START_TIME=14:30
+AKTO_TEST_RUN_TIME=30
+AKTO_MAX_CONCURRENT_REQUESTS=50
+AKTO_SEND_SLACK_ALERT=true
+AKTO_SLACK_WEBHOOK_ID=12345
+AKTO_TEST_CONFIGS_ADVANCED_SETTINGS=[{"operatorType":"ADD_HEADER","operationsGroupList":[{"key":"X-API-Key","value":"secret-key"}]},{"operatorType":"MODIFY_BODY_PARAM","operationsGroupList":[{"key":"userId","value":"test-user-123"}]},{"operatorType":"ADD_URL_PARAM","operationsGroupList":[{"key":"debug","value":"true","urlsList":["GET /api/users","POST /api/users"],"position":"1"}]}]
+EOF
+
+docker run --env-file .env aktosecurity/akto-testing-scan:latest
+```
+
+### Example with URL parameter operations
+
+```bash
+docker run \
+  -e AKTO_DASHBOARD_URL='https://app.akto.io' \
+  -e AKTO_API_KEY='<AKTO_API_KEY>' \
+  -e API_GROUP_NAME='My API Collection' \
+  -e TEST_SUITE_NAME='Security Tests' \
+  -e AKTO_TEST_CONFIGS_ADVANCED_SETTINGS='[{"operatorType":"ADD_URL_PARAM","operationsGroupList":[{"key":"version","value":"v2","urlsList":["GET /api/users","GET /api/products"],"position":"1"}]}]' \
   aktosecurity/akto-testing-scan:latest
 ```
