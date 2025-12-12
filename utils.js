@@ -50,29 +50,131 @@ async function getTestSuiteId(testSuiteName) {
     return null;
 }
 
-async function sendRequestForInit(apiCollectionId, apiGroupName, testSuiteId, testRoleId, overriddenTestAppUrl, testSuiteName, waitTimeForResult, metaData) {
-    const timeNow = Math.floor(Date.now() / 1000);
+/**
+ * Parse date string (YYYY-MM-DD) and time string to Unix timestamp
+ * @param {string} dateStr - Date in YYYY-MM-DD format
+ * @param {string} timeStr - Time string like "Now", "HH:MM", or empty
+ * @returns {number} Unix timestamp in seconds
+ */
+function parseStartTimestamp(dateStr, timeStr) {
+    if (!dateStr) {
+        return Math.floor(Date.now() / 1000);
+    }
+
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) {
+        console.warn(`Invalid date format: ${dateStr}. Using current time.`);
+        return Math.floor(Date.now() / 1000);
+    }
+
+    if (timeStr && timeStr.toLowerCase() !== 'now') {
+        // Parse time string (e.g., "14:30")
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        if (!isNaN(hours) && !isNaN(minutes)) {
+            date.setHours(hours, minutes || 0, 0, 0);
+        }
+    }
+
+    return Math.floor(date.getTime() / 1000);
+}
+
+/**
+ * Parse test run time from minutes to seconds
+ * @param {string|number} testRunTime - Number of minutes (e.g., 30, 60, 120)
+ * @returns {string} Time in seconds as string
+ */
+function parseTestRunTime(testRunTime) {
+    if (!testRunTime) {
+        return "1800"; // Default 30 minutes
+    }
+
+    // Parse as number (in minutes) and convert to seconds
+    const minutes = parseInt(testRunTime);
+    if (!isNaN(minutes) && minutes > 0) {
+        return (minutes * 60).toString();
+    }
+
+    return "1800"; // Default fallback (30 minutes)
+}
+
+async function sendRequestForInit(apiCollectionId, apiGroupName, testSuiteId, testRoleId, overriddenTestAppUrl, testSuiteName, waitTimeForResult, metaData, options = {}) {
+    // Calculate startTimestamp from date and time options
+    let startTimestamp = Math.floor(Date.now() / 1000);
+    if (options.startDate || options.startTime) {
+        startTimestamp = parseStartTimestamp(options.startDate, options.startTime);
+    } else if (options.startTimestamp) {
+        startTimestamp = options.startTimestamp;
+    }
+
+    // Parse test run time
+    const testRunTime = options.testRunTime ? parseTestRunTime(options.testRunTime) : (waitTimeForResult > 0 ? waitTimeForResult.toString() : "1800");
+
+    // Parse max concurrent requests
+    const maxConcurrentRequests = options.maxConcurrentRequests || options.maxConcurrentRequests === 0 
+        ? options.maxConcurrentRequests.toString() 
+        : "100";
+
+    // Determine recurring schedule
+    const recurringDaily = options.recurringDaily === true;
+    const recurringWeekly = options.recurringWeekly === true;
+    const recurringMonthly = options.recurringMonthly === true;
+
+    // Parse autoTicketingDetails
+    let autoTicketingDetails = null;
+    if (options.autoTicketingDetails) {
+        if (typeof options.autoTicketingDetails === 'object') {
+            autoTicketingDetails = options.autoTicketingDetails;
+        } else if (typeof options.autoTicketingDetails === 'string') {
+            try {
+                autoTicketingDetails = JSON.parse(options.autoTicketingDetails);
+            } catch (e) {
+                console.warn('Failed to parse autoTicketingDetails JSON:', e);
+            }
+        }
+    }
+
+    // Parse testConfigsAdvancedSettings
+    let testConfigsAdvancedSettings = [];
+    if (options.testConfigsAdvancedSettings) {
+        if (Array.isArray(options.testConfigsAdvancedSettings)) {
+            testConfigsAdvancedSettings = options.testConfigsAdvancedSettings;
+        } else if (typeof options.testConfigsAdvancedSettings === 'string') {
+            try {
+                testConfigsAdvancedSettings = JSON.parse(options.testConfigsAdvancedSettings);
+                if (!Array.isArray(testConfigsAdvancedSettings)) {
+                    console.warn('testConfigsAdvancedSettings must be an array. Using empty array.');
+                    testConfigsAdvancedSettings = [];
+                }
+            } catch (e) {
+                console.warn('Failed to parse testConfigsAdvancedSettings JSON:', e);
+                testConfigsAdvancedSettings = [];
+            }
+        }
+    }
 
     const data = {
         apiCollectionId: apiCollectionId,
         type: "COLLECTION_WISE",
-        startTimestamp: timeNow,
-        recurringDaily: false,
-        recurringWeekly: false,
-        recurringMonthly: false,
-        selectedTests: [],
-        testName: `${apiGroupName}_${testSuiteName}`,
-        testRunTime: waitTimeForResult.toString(),
-        maxConcurrentRequests: "100",
-        overriddenTestAppUrl: overriddenTestAppUrl,
-        testRoleId: testRoleId,
+        startTimestamp: startTimestamp,
+        recurringDaily: recurringDaily,
+        recurringWeekly: recurringWeekly,
+        recurringMonthly: recurringMonthly,
+        selectedTests: options.selectedTests || [],
+        testName: options.testName || `${apiGroupName}_${testSuiteName}`,
+        testRunTime: testRunTime,
+        maxConcurrentRequests: maxConcurrentRequests,
+        overriddenTestAppUrl: overriddenTestAppUrl || options.overriddenTestAppUrl || "",
+        testRoleId: testRoleId || options.testRoleId || "",
         continuousTesting: false,
-        sendSlackAlert: false,
-        sendMsTeamsAlert: false,
-        testConfigsAdvancedSettings: [],
-        cleanUpTestingResources: false,
-        testSuiteIds: [testSuiteId],
-        autoTicketingDetails: null,
+        sendSlackAlert: options.sendSlackAlert === true,
+        sendMsTeamsAlert: options.sendMsTeamsAlert === true,
+        testConfigsAdvancedSettings: testConfigsAdvancedSettings,
+        cleanUpTestingResources: options.cleanUpTestingResources === true,
+        testSuiteIds: options.testSuiteIds || [testSuiteId],
+        autoTicketingDetails: autoTicketingDetails,
+        selectedMiniTestingServiceName: options.selectedMiniTestingServiceName || null,
+        selectedSlackWebhook: options.selectedSlackWebhook || null,
+        doNotMarkIssuesAsFixed: options.doNotMarkIssuesAsFixed === true, // Note: checked in UI means false here
         metadata: metaData
     };
 
@@ -81,6 +183,7 @@ async function sendRequestForInit(apiCollectionId, apiGroupName, testSuiteId, te
         return response;
     } catch (error) {
         console.error(`Failed to trigger test for ${apiGroupName}. Status: ${error.response?.status}`);
+        throw error;
     }
 }
 
@@ -125,7 +228,60 @@ async function runForGroup(apiGroupName, testSuiteName, configObj, waitTimeForRe
     }
 
     const configObjNew = createInitPayload("");
-    const response = await sendRequestForInit(apiCollectionId, apiGroupName, testSuiteId, "", configObj?.overriddenTestAppUrl || "", testSuiteName, runTime, configObjNew.data.metadata);
+    
+    // Extract options from configObj or environment variables
+    const options = {
+        // Date and time options
+        startDate: configObj?.startDate || process.env['AKTO_START_DATE'],
+        startTime: configObj?.startTime || process.env['AKTO_START_TIME'] || 'Now',
+        startTimestamp: configObj?.startTimestamp,
+        
+        // Test run configuration
+        testRunTime: configObj?.testRunTime || process.env['AKTO_TEST_RUN_TIME'] || runTime.toString(),
+        testName: configObj?.testName,
+        
+        // Test role
+        testRoleId: configObj?.testRoleId || process.env['AKTO_TEST_ROLE_ID'] || "",
+        
+        // Concurrency
+        maxConcurrentRequests: configObj?.maxConcurrentRequests || process.env['AKTO_MAX_CONCURRENT_REQUESTS'] || "100",
+        
+        // Recurring schedule
+        recurringDaily: configObj?.recurringDaily === true || process.env['AKTO_RECURRING_DAILY'] === 'true',
+        recurringWeekly: configObj?.recurringWeekly === true || process.env['AKTO_RECURRING_WEEKLY'] === 'true',
+        recurringMonthly: configObj?.recurringMonthly === true || process.env['AKTO_RECURRING_MONTHLY'] === 'true',
+        
+        // Integration options
+        sendSlackAlert: configObj?.sendSlackAlert === true || process.env['AKTO_SEND_SLACK_ALERT'] === 'true',
+        sendMsTeamsAlert: configObj?.sendMsTeamsAlert === true || process.env['AKTO_SEND_MS_TEAMS_ALERT'] === 'true',
+        selectedSlackWebhook: configObj?.selectedSlackWebhook || process.env['AKTO_SLACK_WEBHOOK_ID'],
+        selectedMiniTestingServiceName: configObj?.selectedMiniTestingServiceName || process.env['AKTO_MINI_TESTING_SERVICE_NAME'],
+        
+        // Auto-ticketing
+        autoTicketingDetails: configObj?.autoTicketingDetails || process.env['AKTO_AUTO_TICKETING_DETAILS'],
+        
+        // Advanced configurations
+        testConfigsAdvancedSettings: configObj?.testConfigsAdvancedSettings || process.env['AKTO_TEST_CONFIGS_ADVANCED_SETTINGS'],
+        
+        // Other options
+        overriddenTestAppUrl: configObj?.overriddenTestAppUrl || process.env['OVERRIDDEN_TEST_APP_URL'] || "",
+        cleanUpTestingResources: configObj?.cleanUpTestingResources === true || process.env['AKTO_CLEANUP_TESTING_RESOURCES'] === 'true',
+        doNotMarkIssuesAsFixed: configObj?.doNotMarkIssuesAsFixed === true || process.env['AKTO_DO_NOT_MARK_ISSUES_AS_FIXED'] === 'true',
+        selectedTests: configObj?.selectedTests || [],
+        testSuiteIds: configObj?.testSuiteIds
+    };
+
+    const response = await sendRequestForInit(
+        apiCollectionId, 
+        apiGroupName, 
+        testSuiteId, 
+        options.testRoleId, 
+        options.overriddenTestAppUrl, 
+        testSuiteName, 
+        runTime, 
+        configObjNew.data.metadata,
+        options
+    );
     return response;
 }
 module.exports = { runForGroup };
