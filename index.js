@@ -55,24 +55,34 @@ function toInt(a) {
 
 let isFirst = true;
 
+function buildApiUrl(base, path) {
+  return base.endsWith('/') ? `${base}${path}` : `${base}/${path}`;
+}
+
 async function fetchTestingRunResultSummary(testingRunResultSummaryHexId) {
   try {
     if (isFirst) {
       console.log("testingRunResultSummaryHexId: ", testingRunResultSummaryHexId);
       isFirst = false
     }
-    const result = await axios.post(`${AKTO_DASHBOARD_URL}/api/fetchTestingRunResultSummary`, {
+    const result = await axios.post(buildApiUrl(AKTO_DASHBOARD_URL, 'api/fetchTestingRunResultSummary'), {
       testingRunResultSummaryHexId
     }, {
       headers: {
         'content-type': 'application/json',
         'X-API-KEY': AKTO_API_KEY
-      }
+      },
+      maxRedirects: 0,
+      validateStatus: status => status >= 200 && status < 300
     });
 
     return result.data;
   } catch (error) {
-    console.error('Error fetching testing run result summaries:', error);
+    if (error.response?.status === 302 || error.code === 'ERR_FR_TOO_MANY_REDIRECTS') {
+      console.error('Authentication failed: API key is invalid or expired. Check AKTO_API_KEY.');
+    } else {
+      console.error('Error fetching testing run result summaries:', error.message);
+    }
     return null;
   }
 }
