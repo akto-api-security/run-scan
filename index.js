@@ -196,19 +196,21 @@ async function waitTillComplete(testDetails, maxWaitTime) {
 }
 
 const ULTRON_HEALTH_URL = 'https://ultron.akto.io/health';
+const CYBORG_HEALTH_URL = 'https://cyborg.akto.io/health';
 const ULTRON_HEALTH_BACKOFF_DELAYS = [5000, 10000, 15000];
 
-async function checkUltronHealth() {
+async function checkUltronHealth(url) {
+  console.log(`Checking ${url} health...`);
   for (let attempt = 0; attempt < ULTRON_HEALTH_BACKOFF_DELAYS.length; attempt++) {
     try {
-      const res = await axios.get(ULTRON_HEALTH_URL, { timeout: 10000 });
+      const res = await axios.get(url, { timeout: 10000 });
       if (res.status >= 200 && res.status < 300) {
         return true;
       }
     } catch (_) {
       // non-2xx or network error
     }
-    console.log(`Ultron health check failed (attempt ${attempt + 1}/${ULTRON_HEALTH_BACKOFF_DELAYS.length}). Retrying in ${ULTRON_HEALTH_BACKOFF_DELAYS[attempt] / 1000}s...`);
+    console.log(`Health check failed (attempt ${attempt + 1}/${ULTRON_HEALTH_BACKOFF_DELAYS.length}). Retrying in ${ULTRON_HEALTH_BACKOFF_DELAYS[attempt] / 1000}s...`);
     await new Promise(resolve => setTimeout(resolve, ULTRON_HEALTH_BACKOFF_DELAYS[attempt]));
   }
   return false;
@@ -217,9 +219,10 @@ async function checkUltronHealth() {
 async function run() {
   console.log(AKTO_DASHBOARD_URL, AKTO_TEST_ID, START_TIME_DELAY, OVERRIDDEN_TEST_APP_URL, WAIT_TIME_FOR_RESULT, BLOCK_LEVEL, API_GROUP_NAME, TEST_SUITE_NAME)
 
-  const ultronHealthy = await checkUltronHealth();
-  if (!ultronHealthy) {
-    console.log('Ultron health check failed after all retries.');
+  const ultronHealthy = await checkUltronHealth(ULTRON_HEALTH_URL);
+  const cyborgHealthy = await checkUltronHealth(CYBORG_HEALTH_URL);
+  if (!ultronHealthy || !cyborgHealthy) {
+    console.log('Health check failed after all retries.');
     logGithubStepSummary('CRITICAL: 0');
     logGithubStepSummary('HIGH: 0');
     logGithubStepSummary('MEDIUM: 0');
