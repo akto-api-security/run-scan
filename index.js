@@ -103,6 +103,20 @@ function parseBlockLevel(BLOCK_LEVEL) {
 
 }
 
+function logIssueCounts({ CRITICAL, HIGH, MEDIUM, LOW }) {
+  logGithubStepSummary(`CRITICAL: ${CRITICAL}`);
+  logGithubStepSummary(`HIGH: ${HIGH}`);
+  logGithubStepSummary(`MEDIUM: ${MEDIUM}`);
+  logGithubStepSummary(`LOW: ${LOW}`);
+}
+
+function checkAndLogBlockLevel({ CRITICAL, HIGH, MEDIUM, LOW }) {
+  if (CRITICAL > 0 || HIGH > 0 || MEDIUM > 0 || LOW > 0) {
+    const resultLevel = CRITICAL > 0 ? 4 : (HIGH > 0 ? 3 : (MEDIUM > 0 ? 2 : 1));
+    exitIfBlockLevelBreached(resultLevel, parseBlockLevel(BLOCK_LEVEL));
+  }
+}
+
 function calcPercentage(num, dom) {
   if (dom == 0) {
     return 0;
@@ -117,12 +131,20 @@ async function waitTillComplete(testDetails, maxWaitTime) {
   const pollStartTime = Math.floor(Date.now() / 1000);
   let lastPercentage = -10;
 
+  let lastKnownCounts = { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0 };
+
   while (true) {
     pollCurrentTime = Math.floor(Date.now() / 1000);
     elapsed = pollCurrentTime - pollStartTime;
 
     if (elapsed >= maxWaitTime) {
       console.log('Max poll interval reached. Exiting.');
+      break;
+    }
+
+    if (!serviceHealth.ultron || !serviceHealth.cyborg) {
+      console.log('Health check failed during test run.');
+      logIssueCounts(lastKnownCounts);
       break;
     }
 
@@ -144,6 +166,7 @@ async function waitTillComplete(testDetails, maxWaitTime) {
       if (!LOW) {
         LOW = 0
       }
+      lastKnownCounts = { CRITICAL, HIGH, MEDIUM, LOW };
       if (!testInitiatedCount) {
         testInitiatedCount = 0;
       }
@@ -160,16 +183,11 @@ async function waitTillComplete(testDetails, maxWaitTime) {
         if (AKTO_TEST_ID && AKTO_TEST_ID != undefined && AKTO_TEST_ID.length > 0){
           logGithubStepSummary(`[Results](${AKTO_DASHBOARD_URL}/dashboard/testing/${AKTO_TEST_ID}/results)`);
         }
-        logGithubStepSummary(`CRITICAL: ${CRITICAL}`);
-        logGithubStepSummary(`HIGH: ${HIGH}`);
-        logGithubStepSummary(`MEDIUM: ${MEDIUM}`);
-        logGithubStepSummary(`LOW: ${LOW}`);
+        logIssueCounts({ CRITICAL, HIGH, MEDIUM, LOW });
 
         if (CRITICAL > 0 || HIGH > 0 || MEDIUM > 0 || LOW > 0) {
           logGithubStepSummary(`Vulnerabilities found!!`);
-
-          let blockLevel = parseBlockLevel(BLOCK_LEVEL)
-          exitIfBlockLevelBreached((CRITICAL > 0 ? 4 : (HIGH > 0 ? 3 : (MEDIUM > 0 ? 2 : (LOW > 0 ? 1 : -10)))), blockLevel);
+          checkAndLogBlockLevel({ CRITICAL, HIGH, MEDIUM, LOW });
         }
 
         break;
@@ -185,6 +203,8 @@ async function waitTillComplete(testDetails, maxWaitTime) {
           logGithubStepSummary("Issues found till now: " + "CRITICAL: " + CRITICAL + " HIGH: " + HIGH + " MEDIUM: " + MEDIUM + " LOW: " + LOW)
         }
 
+        checkAndLogBlockLevel({ CRITICAL, HIGH, MEDIUM, LOW });
+
       } else {
         logGithubStepSummary('Waiting for akto test to be completed...');
       }
@@ -198,6 +218,9 @@ async function waitTillComplete(testDetails, maxWaitTime) {
 const ULTRON_HEALTH_URL = 'https://ultron.akto.io/health';
 const CYBORG_HEALTH_URL = 'https://cyborg.akto.io/health';
 const ULTRON_HEALTH_BACKOFF_DELAYS = [5000, 10000, 15000];
+const HEALTH_POLL_INTERVAL_MS = 30000;
+
+const serviceHealth = { ultron: true, cyborg: true };
 
 async function checkUltronHealth(url) {
   console.log(`Checking ${url} health...`);
@@ -216,6 +239,31 @@ async function checkUltronHealth(url) {
   return false;
 }
 
+async function pingHealth(url) {
+  try {
+    const res = await axios.get(url, { timeout: 10000 });
+    return res.status >= 200 && res.status < 300;
+  } catch (_) {
+    return false;
+  }
+}
+
+function startBackgroundHealthCheck() {
+  const interval = setInterval(async () => {
+    const [ultron, cyborg] = await Promise.all([
+      pingHealth(ULTRON_HEALTH_URL),
+      pingHealth(CYBORG_HEALTH_URL),
+    ]);
+    if (!ultron) console.log('Background health check: Ultron unhealthy');
+    if (!cyborg) console.log('Background health check: Cyborg unhealthy');
+    serviceHealth.ultron = ultron;
+    serviceHealth.cyborg = cyborg;
+  }, HEALTH_POLL_INTERVAL_MS);
+  // Don't keep the process alive just for health checks
+  interval.unref();
+  return interval;
+}
+
 async function run() {
   console.log(AKTO_DASHBOARD_URL, AKTO_TEST_ID, START_TIME_DELAY, OVERRIDDEN_TEST_APP_URL, WAIT_TIME_FOR_RESULT, BLOCK_LEVEL, API_GROUP_NAME, TEST_SUITE_NAME)
 
@@ -223,12 +271,11 @@ async function run() {
   const cyborgHealthy = await checkUltronHealth(CYBORG_HEALTH_URL);
   if (!ultronHealthy || !cyborgHealthy) {
     console.log('Health check failed after all retries.');
-    logGithubStepSummary('CRITICAL: 0');
-    logGithubStepSummary('HIGH: 0');
-    logGithubStepSummary('MEDIUM: 0');
-    logGithubStepSummary('LOW: 0');
+    logIssueCounts({ CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0 });
     return;
   }
+
+  startBackgroundHealthCheck();
 
   const config = createInitPayload(AKTO_TEST_ID);
 

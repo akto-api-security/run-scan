@@ -209,7 +209,7 @@ async function checkIfTestRunExists(testRunName) {
 async function runForGroup(apiGroupName, testSuiteName, configObj, waitTimeForResult = 0) {
 
     const testRunName = `${apiGroupName}_${testSuiteName}`;
-    let runTime = waitTimeForResult > 0 ? waitTimeForResult : 1800; // Default to 30 minutes if no wait time is specified
+    let runTime = waitTimeForResult > 0 ? waitTimeForResult/60 : 30; // Default to 30 minutes if no wait time is specified
 
     const testRunID = await checkIfTestRunExists(testRunName);
     if (testRunID.length > 0){
