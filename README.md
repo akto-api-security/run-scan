@@ -54,12 +54,21 @@ The following environment variables can be used to configure test runs, matching
 - `AKTO_SLACK_WEBHOOK_ID`: Slack webhook ID (required if Slack alerts are enabled)
 - `AKTO_MINI_TESTING_SERVICE_NAME`: Mini testing service name
 
-### Auto-Ticketing
+### Auto-Ticketing (Jira)
 
-- `AKTO_AUTO_TICKETING_DETAILS`: JSON string with auto-ticketing configuration. Example:
+- `AKTO_AUTO_TICKETING_DETAILS`: JSON string sent to `/api/startTest` as `autoTicketingDetails`. Jira only; Wiz findings are not created through this env var.
+
+  Fields (must match the Akto API):
+  - `shouldCreateTickets` (boolean): `true` to create tickets after the test finishes
+  - `projectId` (string): Jira project key already connected in Akto (Settings > Integrations > Jira)
+  - `issueType` (string): Jira issue type name on that project (e.g. `Bug`)
+  - `severities` (array): one or more of `CRITICAL`, `HIGH`, `MEDIUM`, `LOW`, `INFO`
+
   ```json
-  {"enabled": true, "provider": "jira", "projectId": "PROJ-123"}
+  {"shouldCreateTickets": true, "projectId": "PROJ", "issueType": "Bug", "severities": ["CRITICAL", "HIGH"]}
   ```
+
+  Only applied when starting a **new** collection/suite test (`API_GROUP_NAME` + `TEST_SUITE_NAME`). Reusing `AKTO_TEST_ID` or an existing CI/CD run does not send this payload.
 
 ### Advanced Configurations
 
@@ -123,7 +132,7 @@ docker run \
   -e AKTO_SEND_SLACK_ALERT='true' \
   -e AKTO_SLACK_WEBHOOK_ID='12345' \
   -e AKTO_SEND_MS_TEAMS_ALERT='true' \
-  -e AKTO_AUTO_TICKETING_DETAILS='{"enabled": true, "provider": "jira", "projectId": "PROJ-123"}' \
+  -e AKTO_AUTO_TICKETING_DETAILS='{"shouldCreateTickets":true,"projectId":"PROJ","issueType":"Bug","severities":["CRITICAL","HIGH"]}' \
   -e AKTO_TEST_CONFIGS_ADVANCED_SETTINGS='[{"operatorType":"ADD_HEADER","operationsGroupList":[{"key":"X-Custom-Header","value":"custom-value"}]},{"operatorType":"MODIFY_BODY_PARAM","operationsGroupList":[{"key":"param1","value":"new-value"}]}]' \
   -e AKTO_DO_NOT_MARK_ISSUES_AS_FIXED='false' \
   -e WAIT_TIME_FOR_RESULT='1800' \
@@ -147,6 +156,7 @@ AKTO_TEST_RUN_TIME=30
 AKTO_MAX_CONCURRENT_REQUESTS=50
 AKTO_SEND_SLACK_ALERT=true
 AKTO_SLACK_WEBHOOK_ID=12345
+AKTO_AUTO_TICKETING_DETAILS={"shouldCreateTickets":true,"projectId":"PROJ","issueType":"Bug","severities":["CRITICAL","HIGH"]}
 AKTO_TEST_CONFIGS_ADVANCED_SETTINGS=[{"operatorType":"ADD_HEADER","operationsGroupList":[{"key":"X-API-Key","value":"secret-key"}]},{"operatorType":"MODIFY_BODY_PARAM","operationsGroupList":[{"key":"userId","value":"test-user-123"}]},{"operatorType":"ADD_URL_PARAM","operationsGroupList":[{"key":"debug","value":"true","urlsList":["GET /api/users","POST /api/users"],"position":"1"}]}]
 EOF
 
