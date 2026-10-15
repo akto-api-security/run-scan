@@ -36,11 +36,11 @@ pipeline {
     }
 }
 
-def runAktoTest(String apiGroupName, String testSuiteName = 'MiQ Test Suite', String blockLevel='', int waitTime = 3000) {
+def runAktoTest(String apiGroupName, String testSuiteName = 'Standard', String blockLevel='', int waitTime = 3000) {
     // withCredentials([string(credentialsId: 'akto-api-key', variable: 'AKTO_API_KEY')]) {
         
         def dockerOutput = sh(script: """
-            docker run \
+            docker run --rm \
             -e AKTO_DASHBOARD_URL='https://app.akto.io' \
             -e AKTO_API_KEY='${AKTO_API_KEY}' \
             -e WAIT_TIME_FOR_RESULT=${waitTime} \

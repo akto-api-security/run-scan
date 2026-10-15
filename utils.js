@@ -38,7 +38,10 @@ async function getCollectionId(collectionName) {
 async function getTestSuiteId(testSuiteName) {
     try {
         const response = await axios.post(`${AKTO_DASHBOARD_URL}${ALL_TEST_SUITES}`, {}, { headers });
-        const testSuites = response.data.testSuiteList || [];
+        const testSuites = [
+            ...(response.data.testSuiteList || []),
+            ...(response.data.defaultTestSuites || [])
+        ];
         for (const suite of testSuites) {
             if (suite.name === testSuiteName) {
                 return suite.hexId;
